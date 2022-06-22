@@ -39,14 +39,14 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file was not specified, aborting ...")
         sys.exit(1)
     if not _args_.regex:
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Unable to open file '{}', aborting ...".format(_args_.input_file))
+        _logger_.error(f"Unable to open file '{_args_.input_file}', aborting ...")
         sys.exit(1)
 
 
@@ -73,36 +73,39 @@ def parse_file():
     if _args_.regex in REGEX_TYPE:
         pattern = re.compile(REGEX_TYPE[ _args_.regex ])
     else:
-        _logger_.error("Regular expression of type '{}' does not exist in configuration, aborting ...".format(_args_.regex))
+        _logger_.error(
+            f"Regular expression of type '{_args_.regex}' does not exist in configuration, aborting ..."
+        )
+
         sys.exit(1)
-    _logger_.info("Started processing input file '{}' ...".format(_args_.input_file))
+    _logger_.info(f"Started processing input file '{_args_.input_file}' ...")
 
     with open(_args_.input_file) as f:
         for line in f:
             # Remove end of line
             line = line.strip()
             cnt += 1
-            # Check if line matches regex
-            match = pattern.match(line)
-            if match:
+            if match := pattern.match(line):
                 matchcnt += 1
-                _logger_.debug("Matched groups: {}".format(match.groups()))
+                _logger_.debug(f"Matched groups: {match.groups()}")
                 if len(match.groups()) < 4:
                     posgr = match.group(3)
                 elif len(match.groups()) < 5:
                     posgr = match.group(4)
-                _logger_.debug('posgr={}'.format(posgr))
+                _logger_.debug(f'posgr={posgr}')
 
                 if posgr not in tags:
                     tags.append( posgr )
-                    _out_file_.write("{}\n".format(posgr))
+                    _out_file_.write(f"{posgr}\n")
 
             else:
-                _logger_.warn("Unmatched line: {}".format(line))
+                _logger_.warn(f"Unmatched line: {line}")
             if cnt > _args_.first_n_lines > 0:
                 break
         f.close()
-    _logger_.info("Finished processing input file '{}': total {} lines, {} matching lines.".format(_args_.input_file, cnt, matchcnt))
+    _logger_.info(
+        f"Finished processing input file '{_args_.input_file}': total {cnt} lines, {matchcnt} matching lines."
+    )
 
 
 if __name__ == "__main__":

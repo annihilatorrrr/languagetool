@@ -32,12 +32,12 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file was not specified, aborting ...")
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Unable to open file '{}', aborting ...".format(_args_.input_file))
+        _logger_.error(f"Unable to open file '{_args_.input_file}', aborting ...")
         sys.exit(1)
 
 
@@ -51,11 +51,11 @@ def open_out_file():
     global _out_file_
     # Create output file by concatenating base output directory with input file name
     out = os.path.join(_args_.output_dir, os.path.basename(_args_.input_file))
-    _logger_.info("Writing output to file '{}' ...".format(out))
+    _logger_.info(f"Writing output to file '{out}' ...")
     try:
         _out_file_ = open(out, "wb")
     except OSError:
-        _logger_.error( "Unable to open file '{}' for writing, aborting ...".format(out) )
+        _logger_.error(f"Unable to open file '{out}' for writing, aborting ...")
         sys.exit(1)
 
 
@@ -71,13 +71,13 @@ def count_tags(lttag):
     global DIST_TAGS
     taglist = lttag.split(':')
     for tag in taglist:
-        if not tag in DIST_TAGS:
+        if tag not in DIST_TAGS:
             DIST_TAGS.append(tag)
 
 # Parse input file
 def parse_file():
     cnt = 0
-    _logger_.info("Started processing input file '{}' ...".format(_args_.input_file))
+    _logger_.info(f"Started processing input file '{_args_.input_file}' ...")
 
     with open(_args_.input_file) as f:
         for line in f:
@@ -91,25 +91,31 @@ def parse_file():
                 try:
                     lttag = srptagging.get_tag(lparts[2], ':')
                     if lttag.find('ERROR') != -1:
-                        _logger_.error("{} for wordform {}, lemma {}".format(lttag, lparts[0], lparts[1]))
+                        _logger_.error(f"{lttag} for wordform {lparts[0]}, lemma {lparts[1]}")
                         continue
                     count_tags(lttag)
                 except KeyError:
-                    _logger_.error("Getting LT tag: wordform {}, lemma {}, tag {}".format(lparts[0], lparts[1], lparts[2]))
+                    _logger_.error(
+                        f"Getting LT tag: wordform {lparts[0]}, lemma {lparts[1]}, tag {lparts[2]}"
+                    )
+
                     continue
                 # Handle special cases and word types
                 newltag = check_word_type(lparts[1], lparts[2], lttag)
                 if lttag not in (None, ''):
-                    _out_file_.write("{}\t{}\t{}\n".format(lparts[0], lparts[1], newltag).encode('utf-8'))
+                    _out_file_.write(f"{lparts[0]}\t{lparts[1]}\t{newltag}\n".encode('utf-8'))
                 else:
                     _logger_.warn("For PoS tag '{}' no LT tag found. Line: '{}'".format(line))
             else:
-                _logger_.warn("No PoS tag found on line: {}".format(line))
+                _logger_.warn(f"No PoS tag found on line: {line}")
             if cnt > _args_.first_n_lines > 0:
                 break
         f.close()
-    _logger_.info("Finished processing input file '{}': total {} lines.".format(_args_.input_file, cnt))
-    _logger_.info("Found following distinctive LT tags: {}".format(sorted(DIST_TAGS)))
+    _logger_.info(
+        f"Finished processing input file '{_args_.input_file}': total {cnt} lines."
+    )
+
+    _logger_.info(f"Found following distinctive LT tags: {sorted(DIST_TAGS)}")
 
 
 if __name__ == "__main__":

@@ -36,12 +36,15 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file (-i) was not specified, aborting ...")
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Unable to open input file '{}', aborting ...".format(_args_.input_file))
+        _logger_.error(
+            f"Unable to open input file '{_args_.input_file}', aborting ..."
+        )
+
         sys.exit(1)
     if not _args_.config_file:
         _logger_.error("Configuration file (-c) was not specified, aborting ...")
@@ -57,7 +60,10 @@ def read_config():
     global _config_
     # Load configuration file
     if not os.path.exists(_args_.config_file):
-        _logger_.error("Configuration file '{}' does not exist, aborting ...".format(_args_.config_file))
+        _logger_.error(
+            f"Configuration file '{_args_.config_file}' does not exist, aborting ..."
+        )
+
         sys.exit(2)
     _config_ = configparser.ConfigParser()
     _config_.read( _args_.config_file )
@@ -67,19 +73,23 @@ def open_out_file():
     global _out_file_
     # Create output file by concatenating base output directory with input file name
     out = os.path.join(_args_.output_dir, os.path.basename(_args_.input_file))
-    _logger_.info("Writing output to file '{}' ...".format(out))
+    _logger_.info(f"Writing output to file '{out}' ...")
     try:
         _out_file_ = open(out, "wb")
     except OSError:
-        _logger_.error( "Unable to open output file '{}' for writing, aborting ...".format(out) )
+        _logger_.error(f"Unable to open output file '{out}' for writing, aborting ...")
         sys.exit(1)
 
 def open_database():
     global _conn_, _cursor_
-    _logger_.debug("Opening database '{}' as user '{}' ...".format(
-        _config_['DB']['database'], _config_['DB']['username']))
-    _conn_ = psycopg2.connect("dbname={} user={}".format(
-        _config_['DB']['database'], _config_['DB']['username']))
+    _logger_.debug(
+        f"Opening database '{_config_['DB']['database']}' as user '{_config_['DB']['username']}' ..."
+    )
+
+    _conn_ = psycopg2.connect(
+        f"dbname={_config_['DB']['database']} user={_config_['DB']['username']}"
+    )
+
     _cursor_ = _conn_.cursor()
 
 
@@ -90,11 +100,14 @@ def close_out_file():
 
 # Returns TRUE if line is filtered, FALSE otherwise
 def is_filtered(line):
-    if line.find('W') != -1 or line.find('w') != -1 \
-    or line.find('Y') != -1 or line.find('y') != -1 \
-    or line.find('X') != -1 or line.find('x') != -1:
-        return True
-    return False
+    return (
+        line.find('W') != -1
+        or line.find('w') != -1
+        or line.find('Y') != -1
+        or line.find('y') != -1
+        or line.find('X') != -1
+        or line.find('x') != -1
+    )
 
 
 def close_database():
@@ -106,23 +119,25 @@ def close_database():
 
 # Checks for specially defined word types - i.e. reflexive verbs
 def check_word_in_db(wordform, lemma, msd):
-    _cursor_.execute(_config_['DB']['word_exists'], (wordform, lemma, msd+'%',))
+    _cursor_.execute(_config_['DB']['word_exists'], (wordform, lemma, f'{msd}%'))
     ret = _cursor_.fetchone()[0] # Take first element of resulting tuple
-    _logger_.debug("Checked existence of (wordform, lemma, msd) = ({}, {}, {}%), got: {}".format(
-        wordform, lemma, msd, ret))
+    _logger_.debug(
+        f"Checked existence of (wordform, lemma, msd) = ({wordform}, {lemma}, {msd}%), got: {ret}"
+    )
+
     return ret
 
 
 def insert_word_in_db(wordform, lemma, tag, frequency):
     # _cursor_.execute(_config_['DB']['word_insert'], (wordform, lemma, tag, frequency,) )
     #_conn_.commit()
-    _logger_.info("Inserted: ({}, {}, {}, {})".format(wordform, lemma, tag, frequency))
+    _logger_.info(f"Inserted: ({wordform}, {lemma}, {tag}, {frequency})")
 
 
 # Parse input file
 def parse_file():
     cnt = 0
-    _logger_.info("Started processing input file '{}' ...".format(_args_.input_file))
+    _logger_.info(f"Started processing input file '{_args_.input_file}' ...")
 
     with open(_args_.input_file) as f:
         for line in f:
@@ -133,21 +148,22 @@ def parse_file():
             lparts = line.split('\t')
             # Check if there is a tag
             if len(lparts) == 4:
-                if not is_filtered(line):
-                    # Check if there is (wordform, lemma) combination in DB
-                    if not check_word_in_db(lparts[0], lparts[1], lparts[2]):
-                        # Insert everything in DB
-                        insert_word_in_db(lparts[0], lparts[1], lparts[2], lparts[3])
-                else:
+                if is_filtered(line):
                     # Line should be skipped, write to output file
-                    _logger_.debug("Skipping filtered line '{}' ...".format(line))
+                    _logger_.debug(f"Skipping filtered line '{line}' ...")
                     _out_file_.write(line.encode('utf-8'))
+                elif not check_word_in_db(lparts[0], lparts[1], lparts[2]):
+                    # Insert everything in DB
+                    insert_word_in_db(lparts[0], lparts[1], lparts[2], lparts[3])
             else:
-                _logger_.warn("Non-compliant line, skipping: '{}' ...".format(lparts))
+                _logger_.warn(f"Non-compliant line, skipping: '{lparts}' ...")
             if cnt > _args_.first_n_lines > 0:
                 break
         f.close()
-    _logger_.info("Finished processing input file '{}': total {} lines.".format(_args_.input_file, cnt))
+    _logger_.info(
+        f"Finished processing input file '{_args_.input_file}': total {cnt} lines."
+    )
+
     _logger_.info("Skipped lines are in output file.")
 
 

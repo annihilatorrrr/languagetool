@@ -38,12 +38,15 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file (-i) was not specified, aborting ...")
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Input file '{}' does not exist, aborting ...".format(_args_.input_file))
+        _logger_.error(
+            f"Input file '{_args_.input_file}' does not exist, aborting ..."
+        )
+
         sys.exit(1)
     if not _args_.output_file:
         _logger_.error("Output file (-o) was not specified, aborting ...")
@@ -56,8 +59,11 @@ def find_frequencies():
     global _freqs_
     cnt = 1
     matchcnt = 0
-    _logger_.info("PASS 1: Started processing input file '{}', getting word frequencies ...".format(_args_.input_file))
-    freq = list()
+    _logger_.info(
+        f"PASS 1: Started processing input file '{_args_.input_file}', getting word frequencies ..."
+    )
+
+    freq = []
 
     with open(_args_.input_file) as f:
         for line in f:
@@ -67,18 +73,21 @@ def find_frequencies():
             if len(tokens) == 4:
                 matchcnt += 1
                 frequency = tokens[3]
-                _logger_.debug('cnt={} frequency={}'.format(cnt, frequency))
+                _logger_.debug(f'cnt={cnt} frequency={frequency}')
                 # Do not take punctuation signs
                 if int(frequency) not in freq:
                     freq.append( int(frequency) )
             else:
-                _logger_.warn("Unmatched line: {}".format(line))
+                _logger_.warn(f"Unmatched line: {line}")
             if cnt == _args_.first_n_lines > 0:
                 break
             cnt += 1
         f.close()
-    _logger_.info( "PASS 1: End processing input file '{}', matched {} lines.".format(_args_.input_file, matchcnt))
-    _logger_.info( "PASS 1: Got {} different word frequencies.".format(len(freq)) )
+    _logger_.info(
+        f"PASS 1: End processing input file '{_args_.input_file}', matched {matchcnt} lines."
+    )
+
+    _logger_.info(f"PASS 1: Got {len(freq)} different word frequencies.")
     _freqs_ = sorted(freq)
 
 
@@ -86,19 +95,19 @@ def find_frequencies():
 # With this algorithm we try equal distribution
 def distribute_word_frequencies():
     global _freqmap_
-    _logger_.info( "Frequencies: first {}, last {}.".format(_freqs_[0], _freqs_[-1]) )
+    _logger_.info(f"Frequencies: first {_freqs_[0]}, last {_freqs_[-1]}.")
     len_freq = len(_freqs_)
     bucket_size = len_freq // _args_.base + 1
-    _logger_.debug( "Frequency list bucket size: {}".format(bucket_size) )
+    _logger_.debug(f"Frequency list bucket size: {bucket_size}")
     cnt = 0
 
-    for msb in range(0, _args_.base):
-        for lsb in range(0, bucket_size):
+    for msb in range(_args_.base):
+        for lsb in range(bucket_size):
             cnt += 1
             ind = msb * bucket_size + lsb
             if ind < len_freq:
                 _freqmap_[ _freqs_[ ind ] ] = msb + 1
-                _logger_.debug( 'msb={} lsb={} ind={}, {} => {}'.format(msb, lsb, ind, _freqs_[ ind ], msb+1))
+                _logger_.debug(f'msb={msb} lsb={lsb} ind={ind}, {_freqs_[ind]} => {msb + 1}')
             if cnt > _args_.first_n_lines > 0:
                 break
 
@@ -107,29 +116,36 @@ def distribute_word_frequencies():
 def parse_file():
     cnt = 1
     matchcnt = 0
-    _logger_.info("PASS 2: Started processing input file '{}' ...".format(_args_.input_file))
-    freqfile = open(_args_.output_file, "wb")
+    _logger_.info(
+        f"PASS 2: Started processing input file '{_args_.input_file}' ..."
+    )
 
-    with open(_args_.input_file) as f:
-        for line in f:
-            # Remove end of line
-            line = line.strip()
-            tokens = line.split('\t')
-            if len(tokens) == 4:
-                matchcnt += 1
-                flexform = tokens[0]
-                frequency = tokens[3]
-                # Write to frequency file
-                freqfile.write('<w f="{}" flags="">{}</w>\n'.format(_freqmap_[ int(frequency) ], flexform).encode('utf-8'))
-            else:
-                _logger_.warn("Unmatched line: {}".format(line))
-            if cnt == _args_.first_n_lines > 0:
-                break
-            cnt += 1
-        f.close()
-    freqfile.close()
-    _logger_.info("PASS 2: Finished processing input file '{}': total {} lines, {} matching lines.".format(
-        _args_.input_file, cnt, matchcnt))
+    with open(_args_.output_file, "wb") as freqfile:
+        with open(_args_.input_file) as f:
+            for line in f:
+                # Remove end of line
+                line = line.strip()
+                tokens = line.split('\t')
+                if len(tokens) == 4:
+                    matchcnt += 1
+                    flexform = tokens[0]
+                    frequency = tokens[3]
+                                    # Write to frequency file
+                    freqfile.write(
+                        f'<w f="{_freqmap_[int(frequency)]}" flags="">{flexform}</w>\n'.encode(
+                            'utf-8'
+                        )
+                    )
+
+                else:
+                    _logger_.warn(f"Unmatched line: {line}")
+                if cnt == _args_.first_n_lines > 0:
+                    break
+                cnt += 1
+            f.close()
+    _logger_.info(
+        f"PASS 2: Finished processing input file '{_args_.input_file}': total {cnt} lines, {matchcnt} matching lines."
+    )
 
 
 if __name__ == "__main__":

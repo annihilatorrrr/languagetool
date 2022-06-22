@@ -140,7 +140,8 @@ def treat_rule(rule, idr):
     
     pattern, message = treat_pattern(rule['pattern'], rule['suggestions'], rule['message'])
     example = treat_example(rule['wrong_example'], rule['correct_example'])
-    text = u"""\t<rule id ='unsorted%03.d'>
+    return (
+        u"""\t<rule id ='unsorted%03.d'>
 \t\t<pattern>
 \t\t%s
 \t\t</pattern>
@@ -149,8 +150,16 @@ def treat_rule(rule, idr):
 \t\t<!--  Wrong: %s -->
 \t\t<!--Correct: %s -->
 \t</rule>
-    """%(idr, pattern, message, example, rule['wrong_example'], rule['correct_example'])
-    return text
+    """
+        % (
+            idr,
+            pattern,
+            message,
+            example,
+            rule['wrong_example'],
+            rule['correct_example'],
+        )
+    )
     
 def treat_pattern(pattern, suggestions, message):
     """
@@ -170,12 +179,11 @@ def treat_example(wrong_example, correct_example):
     correct_example = correct_example.split('/')[0]
     correct_tokens = araby.tokenize(correct_example)
     wrong_tokens   = araby.tokenize(wrong_example)
-    
+
     correct_word ,   wrong_tokens = diff(wrong_tokens, correct_tokens)
     correct_word = u" ".join(correct_word)
     wrong_output  = u" ".join(wrong_tokens)
-    example = u"<example correction='%s'>%s</example>\n"%(correct_word, wrong_output)
-    return example
+    return u"<example correction='%s'>%s</example>\n"%(correct_word, wrong_output)
     
 def diff(wrong, correct):
     """ diff two lists"""
@@ -190,12 +198,12 @@ def diff(wrong, correct):
     if  i >= start  and j >= start and correct[i] == wrong[j]:
         i -= 1
         j -= 1
-        
+
     end_correct = i
     end_wrong   = j
     correct_word = correct[start:end_correct]
     wrong = wrong[:start] +['<marker>',] + wrong[start:end_wrong] +['</marker>',]+ wrong[end_wrong:]
-    
+
     return correct_word, wrong
 if __name__ == "__main__":
   main()

@@ -116,7 +116,7 @@ DNOUN = dict(
 # Tags starting with "N" - noun (именица)
 def _get_noun_tag(msd, sep):
     if len(msd) < 5:
-        return "ERROR: Incorrect noun tag '{}'".format(msd)
+        return f"ERROR: Incorrect noun tag '{msd}'"
     ret = "IM"
     ret += sep + DNOUN[ 'type'   ][ msd[1] ] # Type
     ret += sep + DNOUN[ 'gender' ][ msd[2] ] # Gender
@@ -131,7 +131,7 @@ def _print_noun_tags(sep, wrdesc):
         for gender in DNOUN[ 'gender' ].values():
             for number in DNOUN[ 'number' ].values():
                 for case in DNOUN[ 'case' ].values():
-                    st = "IM:{}:{}:{}:{}".format(type, gender, number, case)
+                    st = f"IM:{type}:{gender}:{number}:{case}"
                     if wrdesc:
                         descr = get_tag_desc(st, sep)
                         pprint(st, descr)
@@ -142,7 +142,7 @@ def _print_noun_tags(sep, wrdesc):
             for number in DNOUN[ 'number' ].values():
                 for case in DNOUN[ 'case' ].values():
                     for animate in DNOUN[ 'animate' ].values():
-                        st = "IM:{}:{}:{}:{}:{}".format(type, gender, number, case, animate)
+                        st = f"IM:{type}:{gender}:{number}:{case}:{animate}"
                         if wrdesc:
                             descr = get_tag_desc(st, sep)
                             pprint(st, descr)
@@ -172,7 +172,7 @@ DVERB = dict(
 # Tags starting with "V" - verb (глагол)
 def _get_verb_tag(msd, sep):
     if len(msd) < 2:
-        return "ERROR: Incorrect verb tag '{}'".format(msd)
+        return f"ERROR: Incorrect verb tag '{msd}'"
     ret = 'GL'
     ret += sep + DVERB[ 'type'   ][ msd[1] ] # Type
     ret += sep + DVERB[ 'vform'  ][ msd[2] ] # VFrom
@@ -188,8 +188,7 @@ def _get_verb_tag(msd, sep):
 def _print_verb_tags(sep, wrdesc):
     for type in DVERB[ 'type' ].values():
         for vform in DVERB[ 'vform' ].values():
-            st = "GL:{}:{}".format(
-                type, vform)
+            st = f"GL:{type}:{vform}"
             if wrdesc:
                 descr = get_tag_desc(st, sep)
                 pprint(st, descr)
@@ -198,8 +197,7 @@ def _print_verb_tags(sep, wrdesc):
     for type in DVERB[ 'type' ].values():
         for vform in DVERB[ 'vform' ].values():
             for person in DVERB[ 'person' ].values():
-                st = "GL:{}:{}:{}".format(
-                    type, vform, person)
+                st = f"GL:{type}:{vform}:{person}"
                 if wrdesc:
                     descr = get_tag_desc(st, sep)
                     pprint(st, descr)
@@ -210,8 +208,7 @@ def _print_verb_tags(sep, wrdesc):
             for person in DVERB[ 'person' ].values():
                 for number in DVERB[ 'number' ].values():
                     for gender in DVERB[ 'gender' ].values():
-                        st = "GL:{}:{}:{}:{}:{}".format(
-                            type, vform, person, number, gender)
+                        st = f"GL:{type}:{vform}:{person}:{number}:{gender}"
                         if wrdesc:
                             descr = get_tag_desc(st, sep)
                             pprint(st, descr)
@@ -223,8 +220,7 @@ def _print_verb_tags(sep, wrdesc):
                 for number in DVERB[ 'number' ].values():
                     for gender in DVERB[ 'gender' ].values():
                         for negat in DVERB[ 'negative' ].values():
-                            st = "GL:{}:{}:{}:{}:{}:{}".format(
-                                type, vform, person, number, gender, negat)
+                            st = f"GL:{type}:{vform}:{person}:{number}:{gender}:{negat}"
                             if wrdesc:
                                 descr = get_tag_desc(st, sep)
                                 pprint(st, descr)
@@ -253,7 +249,7 @@ DADJ = dict(
 # Tags starting with "A" - adjectives (придев)
 def _get_adjective_tag(msd, sep):
     if len(msd) < 6:
-        return "ERROR: Incorrect adjective tag '{}'".format(msd)
+        return f"ERROR: Incorrect adjective tag '{msd}'"
     ret = "PR"
     ret += sep + DADJ[ 'type'   ][ msd[1] ] # Type
     ret += sep + DADJ[ 'degree' ][ msd[2] ] # Degree
@@ -273,8 +269,7 @@ def _print_adjective_tags(sep, wrdesc):
                 for number in DADJ[ 'number' ].values():
                     for case in DADJ[ 'case' ].values():
                         for defin in DADJ[ 'defin' ].values():
-                            st = "PR:{}:{}:{}:{}:{}:{}".format(
-                                type, degree, gender, number, case, defin)
+                            st = f"PR:{type}:{degree}:{gender}:{number}:{case}:{defin}"
                             if wrdesc:
                                 descr = get_tag_desc(st, sep)
                                 pprint(st, descr)
@@ -287,8 +282,7 @@ def _print_adjective_tags(sep, wrdesc):
                     for case in DADJ[ 'case' ].values():
                         for defin in DADJ[ 'defin' ].values():
                             for animate in DADJ[ 'animate' ].values():
-                                st = "PR:{}:{}:{}:{}:{}:{}:{}".format(
-                                    type, degree, gender, number, case, defin, animate)
+                                st = f"PR:{type}:{degree}:{gender}:{number}:{case}:{defin}:{animate}"
                                 if wrdesc:
                                     descr = get_tag_desc(st, sep)
                                     pprint(st, descr)
@@ -317,7 +311,7 @@ DPRO = dict(
 # Tags starting with "P" - pronoun (заменица)
 def _get_pronoun_tag(msd, sep):
     if len(msd) not in (2, 6, 7):
-        return "ERROR: Incorrect pronoun tag '{}'".format(msd)
+        return f"ERROR: Incorrect pronoun tag '{msd}'"
     ret = 'ZM'
     ret += sep + DPRO[ 'type'   ][ msd[1] ] # Type
     if len(msd) > 2:
@@ -331,8 +325,7 @@ def _get_pronoun_tag(msd, sep):
 
 def _print_pronoun_tags(sep, wrdesc):
     for type in DPRO[ 'type' ].values():
-        st = "ZM:{}".format(
-            type)
+        st = f"ZM:{type}"
         if wrdesc:
             descr = get_tag_desc(st, sep)
             pprint(st, descr)
@@ -343,8 +336,7 @@ def _print_pronoun_tags(sep, wrdesc):
             for gender in DPRO[ 'gender' ].values():
                 for number in DPRO[ 'number' ].values():
                     for case in DPRO[ 'case' ].values():
-                        st = "ZM:{}:{}:{}:{}:{}".format(
-                            type, person, gender, number, case)
+                        st = f"ZM:{type}:{person}:{gender}:{number}:{case}"
                         if wrdesc:
                             descr = get_tag_desc(st, sep)
                             pprint(st, descr)
@@ -356,8 +348,7 @@ def _print_pronoun_tags(sep, wrdesc):
                 for number in DPRO[ 'number' ].values():
                     for case in DPRO[ 'case' ].values():
                         for anim in DPRO[ 'animate' ].values():
-                            st = "ZM:{}:{}:{}:{}:{}:{}".format(
-                                type, person, gender, number, case, anim)
+                            st = f"ZM:{type}:{person}:{gender}:{number}:{case}:{anim}"
                             if wrdesc:
                                 descr = get_tag_desc(st, sep)
                                 pprint(st, descr)
@@ -375,15 +366,15 @@ DADV = dict(
 # Tags starting with "R" - adverb (прилог)
 def _get_adverb_tag(msd, sep):
     if len(msd) not in (2, 3):
-        return "ERROR: Incorrect adverb tag '{}'".format(msd)
-    ret = 'PL' + sep + DADV[ 'type' ][ msd[1] ] # Type
+        return f"ERROR: Incorrect adverb tag '{msd}'"
+    ret = f'PL{sep}' + DADV[ 'type' ][ msd[1] ]
     if len(msd) == 3:
         ret += sep + DADV[ 'degree' ][ msd[2] ] # Degree
     return ret
 
 def _print_adverb_tags(sep, wrdesc):
     for type in DADV[ 'type' ].values():
-        st = 'PL:{}'.format(type)
+        st = f'PL:{type}'
         if wrdesc:
             descr = get_tag_desc(st, sep)
             pprint(st, descr)
@@ -391,7 +382,7 @@ def _print_adverb_tags(sep, wrdesc):
             pprint(st, None)
     for type in DADV[ 'type' ].values():
         for degree in DADV[ 'degree' ].values():
-            st = 'PL:{}:{}'.format(type, degree)
+            st = f'PL:{type}:{degree}'
             if wrdesc:
                 descr = get_tag_desc(st, sep)
                 pprint(st, descr)
@@ -406,13 +397,12 @@ DADP = dict(
 # Tags starting with "S" - adposition (предлог)
 def _get_adposition_tag(msd, sep):
     if len(msd) != 2:
-        return "ERROR: Incorrect preposition tag '{}'".format(msd)
-    ret = 'PE' + sep + DADP[ 'case' ][ msd[1] ] # Case
-    return ret
+        return f"ERROR: Incorrect preposition tag '{msd}'"
+    return f'PE{sep}' + DADP[ 'case' ][ msd[1] ]
 
 def _print_adposition_tags(sep, wrdesc):
     for case in DADP[ 'case' ].values():
-        st = 'PE:{}'.format(case)
+        st = f'PE:{case}'
         if wrdesc:
             descr = get_tag_desc(st, sep)
             pprint(st, descr)
@@ -429,13 +419,12 @@ DCON = dict(
 # Tags starting with "C" - conjunction (везник)
 def _get_conjunction_tag(msd, sep):
     if len(msd) != 2:
-        return "ERROR: Incorrect conjunction tag '{}'".format(msd)
-    ret = 'VE' + sep + DCON[ msd ]
-    return ret
+        return f"ERROR: Incorrect conjunction tag '{msd}'"
+    return f'VE{sep}{DCON[msd]}'
 
 def _print_conjunction_tags(sep, wrdesc):
     for type in DCON.values():
-        st = 'VE:{}'.format(type)
+        st = f'VE:{type}'
         if wrdesc:
             descr = get_tag_desc(st, sep)
             pprint(st, descr)
@@ -461,7 +450,7 @@ DNUM = dict(
 # Tags starting with "M" - numeral (број)
 def _get_numeral_tag(msd, sep):
     if len(msd) < 3:
-        return "ERROR: Incorrect numeral tag '{}'".format(msd)
+        return f"ERROR: Incorrect numeral tag '{msd}'"
     ret = 'BR'
     ret += sep + DNUM[ 'form' ][ msd[1] ] # Form: digit, Roman or letter
     ret += sep + DNUM[ 'type' ][ msd[2] ] # Type
@@ -476,7 +465,7 @@ def _get_numeral_tag(msd, sep):
 def _print_numeral_tags(sep, wrdesc):
     for form in DNUM[ 'form' ].values():
         for type in DNUM[ 'type' ].values():
-            st = "BR:{}:{}".format(form, type)
+            st = f"BR:{form}:{type}"
             if wrdesc:
                 descr = get_tag_desc(st, sep)
                 pprint(st, descr)
@@ -487,8 +476,7 @@ def _print_numeral_tags(sep, wrdesc):
             for gender in DNUM[ 'gender' ].values():
                 for number in DNUM[ 'number' ].values():
                     for case in DNUM[ 'case' ].values():
-                        st = "BR:{}:{}:{}:{}:{}".format(
-                            form, type, gender, number, case)
+                        st = f"BR:{form}:{type}:{gender}:{number}:{case}"
                         if wrdesc:
                             descr = get_tag_desc(st, sep)
                             pprint(st, descr)
@@ -500,8 +488,7 @@ def _print_numeral_tags(sep, wrdesc):
                 for number in DNUM[ 'number' ].values():
                     for case in DNUM[ 'case' ].values():
                         for animate in DNUM[ 'animate' ].values():
-                            st = "BR:{}:{}:{}:{}:{}:{}".format(
-                                form, type, gender, number, case, animate)
+                            st = f"BR:{form}:{type}:{gender}:{number}:{case}:{animate}"
                             if wrdesc:
                                 descr = get_tag_desc(st, sep)
                                 pprint(st, descr)
@@ -519,14 +506,13 @@ DPAR = dict(
 # Tags starting with "Q" - particle (речца)
 def _get_particle_tag(msd, sep):
     if len(msd) != 2:
-        return "ERROR: Incorrect particle tag '{}'".format(msd)
-    ret = 'RE' + sep + DPAR[ msd ]
-    return ret
+        return f"ERROR: Incorrect particle tag '{msd}'"
+    return f'RE{sep}{DPAR[msd]}'
 
 
 def _print_particle_tags(sep, wrdesc):
     for type in DPAR.values():
-        st = 'RE:{}'.format(type)
+        st = f'RE:{type}'
         if wrdesc:
             descr = get_tag_desc(st, sep)
             pprint(st, descr)
@@ -588,7 +574,7 @@ def get_tag(msd, sep):
     if msd in ("", None):
         return ""
     beglet = msd[0]
-    if   beglet == "N": # Noun
+    if beglet == "N": # Noun
         return _get_noun_tag(msd, sep)
     elif beglet == "V": # Verb
         return _get_verb_tag(msd, sep)
@@ -615,7 +601,7 @@ def get_tag(msd, sep):
     elif beglet == "Z": # Punctuation
         return _get_punctuation_tag(msd, sep)
     else: # We don't know how to tag
-        return "Unknown word type: {}".format(beglet)
+        return f"Unknown word type: {beglet}"
 
 
 # Pretty printing PoS tag and description
@@ -623,7 +609,7 @@ def pprint(tag, desc):
     if desc is not None:
         print( "{:<33} {}".format(tag, desc) )
     else:
-        print( "{}".format(tag) )
+        print(f"{tag}")
 
 
 # Prints list of all tags that program is capable of constructing
@@ -1703,7 +1689,7 @@ def get_tag_desc(tag, sep):
     fw = list(l1[0])
     fw[0] = fw[0].upper()
     l1[0] = "".join(fw)
-    ret = "".join(" {} ".format(sep).join(l1))
+    ret = "".join(f" {sep} ".join(l1))
     return ret
 
 

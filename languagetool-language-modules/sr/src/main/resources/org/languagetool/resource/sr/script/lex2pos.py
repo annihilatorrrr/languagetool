@@ -25,7 +25,7 @@ If entries are in Croatian Latin script, they will be converted into Serbian Cyr
 """
 
 _args_, _logger_, _l2comp_, _l2conv_, _ciregex_, _freqs_, _cirdict_ = None, None, None, None, None, list(), None
-_freqmap_ = dict()
+_freqmap_ = {}
 
 LOG_FORMAT = '%(asctime)-15s %(levelname)s %(message)s'
 CYR_LETTERS = {
@@ -97,7 +97,7 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file (-i) was not specified, aborting ...")
         sys.exit(1)
@@ -108,10 +108,13 @@ def parse_args():
         _logger_.error("Map file (-m) was not specified, aborting ...")
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Input file '{}' does not exist, aborting ...".format(_args_.input_file))
+        _logger_.error(
+            f"Input file '{_args_.input_file}' does not exist, aborting ..."
+        )
+
         sys.exit(1)
     if not os.path.exists(_args_.map_file):
-        _logger_.error("Map file '{}' does not exist, aborting ...".format(_args_.map_file))
+        _logger_.error(f"Map file '{_args_.map_file}' does not exist, aborting ...")
         sys.exit(1)
 
 
@@ -123,19 +126,24 @@ def open_out_files():
         out_dir = os.path.join(_args_.base_dir, lett)
         if not os.path.exists( out_dir ):
             os.makedirs( out_dir )
-        WORD_FILES[ cl ] = list()
-        _logger_.debug( "Opening file {}/{}-lex-words.txt ...".format(out_dir, lett) )
-        WORD_FILES[ cl ].append( open( os.path.join(out_dir, lett + '-lex-words.txt'), 'wb' ) )
-        _logger_.debug( "Opening file {}/{}-lex-names.txt ...".format(out_dir, lett) )
-        WORD_FILES[ cl ].append( open( os.path.join(out_dir, lett + '-lex-names.txt'), 'wb' ) )
+        WORD_FILES[ cl ] = []
+        _logger_.debug(f"Opening file {out_dir}/{lett}-lex-words.txt ...")
+        WORD_FILES[cl].append(
+            open(os.path.join(out_dir, f'{lett}-lex-words.txt'), 'wb')
+        )
+
+        _logger_.debug(f"Opening file {out_dir}/{lett}-lex-names.txt ...")
+        WORD_FILES[cl].append(
+            open(os.path.join(out_dir, f'{lett}-lex-names.txt'), 'wb')
+        )
 
 
 # Close all files containing words
 def close_out_files():
     for cl, lett_files in WORD_FILES.items():
-        _logger_.debug('Closing file {}-lex-words.txt ...'.format(CYR_LETTERS[ cl ]))
+        _logger_.debug(f'Closing file {CYR_LETTERS[cl]}-lex-words.txt ...')
         lett_files[0].close()
-        _logger_.debug('Closing file {}-lex-names.txt ...'.format(CYR_LETTERS[ cl ]))
+        _logger_.debug(f'Closing file {CYR_LETTERS[cl]}-lex-names.txt ...')
         lett_files[1].close()
 
 
@@ -144,19 +152,17 @@ def init():
     global _l2conv_, _l2comp_, _ciregex_, _cirdict_
     # Create conversion dictionary for Latin to Cyrillic conversion
     _l2conv_ = dict(zip(LAT_LIST, CIR_UTF_LIST))
-    _logger_.debug("Conversion dictionary Lat/Cir: {}".format(_l2conv_))
+    _logger_.debug(f"Conversion dictionary Lat/Cir: {_l2conv_}")
     _l2comp_ = re.compile('|'.join(_l2conv_))
     # Read map file and populate map dictionary
     with open(_args_.map_file) as infile:
         _cirdict_ = dict(x.strip().split(None, 1) for x in infile if x.strip())
     # Compile dictionary
     keys = sorted(_cirdict_.keys(), key=len, reverse=True)
-    expression = []
-    for item in keys:
-        expression.append(re.escape(item))
-    _logger_.debug("Replace map: {}".format(_cirdict_))
+    expression = [re.escape(item) for item in keys]
+    _logger_.debug(f"Replace map: {_cirdict_}")
     # Create a regular expression  from the dictionary keys
-    _ciregex_ = re.compile("(%s)" % "|".join(expression))
+    _ciregex_ = re.compile(f'({"|".join(expression)})')
 
 
 # Determine output file for word tripple
@@ -164,13 +170,14 @@ def init():
 def get_words_out_file( first_char ):
     if first_char.lower() in WORD_FILES:
         # Is this really a lower case?
-        if first_char == first_char.lower():
-            out_file = WORD_FILES[ first_char.lower() ][0]
-        else:
-            out_file = WORD_FILES[ first_char.lower() ][1]
+        return (
+            WORD_FILES[first_char.lower()][0]
+            if first_char == first_char.lower()
+            else WORD_FILES[first_char.lower()][1]
+        )
+
     else:
-        out_file = WORD_FILES[ 'misc' ][0]
-    return out_file
+        return WORD_FILES[ 'misc' ][0]
 
 
 # Go through input file, read word frequencies and prepare map file
@@ -179,8 +186,11 @@ def find_frequencies():
     global _freqs_
     cnt = 0
     matchcnt = 0
-    _logger_.info("PASS 1: Started processing input file '{}', finding word frequencies ...".format(_args_.input_file))
-    freq = list()
+    _logger_.info(
+        f"PASS 1: Started processing input file '{_args_.input_file}', finding word frequencies ..."
+    )
+
+    freq = []
 
     with open(_args_.input_file) as f:
         for line in f:
@@ -192,34 +202,34 @@ def find_frequencies():
                 matchcnt  += 1
                 posgr     = tokens[2]
                 frequency = tokens[3]
-                _logger_.debug('frequency={}'.format(frequency))
+                _logger_.debug(f'frequency={frequency}')
                 # Do not take punctuation signs
                 if int(frequency) not in freq and posgr != 'Z':
                     freq.append( int(frequency) )
             else:
-                _logger_.warn("Unmatched line: {}".format(line))
+                _logger_.warn(f"Unmatched line: {line}")
             if cnt > _args_.first_n_lines > 0:
                 break
         f.close()
-    _logger_.info( "PASS 1: End processing input file '{}'.".format(_args_.input_file))
-    _logger_.info( "PASS 1: Found {} different word frequencies.".format(len(freq)) )
+    _logger_.info(f"PASS 1: End processing input file '{_args_.input_file}'.")
+    _logger_.info(f"PASS 1: Found {len(freq)} different word frequencies.")
     _freqs_ = sorted(freq)
 
 
 # Maps list of word frequencies to numbers from 0 to 255
 def distribute_word_frequencies():
     global _freqmap_
-    _logger_.info( "Frequencies: first {}, last {}.".format(_freqs_[0], _freqs_[-1]) )
+    _logger_.info(f"Frequencies: first {_freqs_[0]}, last {_freqs_[-1]}.")
     # Special case
     _freqmap_[ 0 ] = 0
     len_freq = len(_freqs_)
     # Subtract frequency 0 and divide rest of the list in 255 buckets
     bucket_size = (len_freq - 1) // 255 + 1
-    _logger_.debug( "Frequency list bucket size: {}".format(bucket_size) )
+    _logger_.debug(f"Frequency list bucket size: {bucket_size}")
 
-    for msb in list(range(0, 255)):
+    for msb in list(range(255)):
         #print( 'msb={}'.format(msb))
-        for lsb in list(range(0, bucket_size)):
+        for lsb in list(range(bucket_size)):
             ind = msb * bucket_size + lsb + 1
             if ind < len_freq:
                 #print( 'lsb={} ind={} '.format(lsb, ind))
@@ -235,53 +245,59 @@ def has_bad_letters(word):
 def parse_file():
     cnt = 0
     matchcnt = 0
-    _logger_.info("PASS 2: Started processing input file '{}' ...".format(_args_.input_file))
-    freqfile = open("serbian-wordlist.xml", "wb")
+    _logger_.info(
+        f"PASS 2: Started processing input file '{_args_.input_file}' ..."
+    )
 
-    with open(_args_.input_file) as f:
-        for line in f:
-            # Remove end of line
-            line = line.strip()
-            cnt += 1
-            tokens = line.split('\t')
-            if len(tokens) == 5:
-                matchcnt += 1
-                flexform = tokens[0]
-                lemma = tokens[1]
-                posgr = tokens[2]
-                frequency = tokens[3]
-                # We need to do transliterating here in order to avoid transliterating POS tag :(
-                flexform_lemma = "{}\t{}".format(flexform, lemma)
-                if lemma.upper() not in ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'):
-                    # Transliterate all words in line, replacing Latin with Cyrillic characters
-                    flexform_lemma = _l2comp_.sub(lambda m: _l2conv_[m.group()], flexform_lemma)
-                    # Replace words according to replace map
-                    flexform_lemma = _ciregex_.sub(lambda mo: _cirdict_[mo.string[mo.start():mo.end()]], flexform_lemma)
-                    if has_bad_letters(flexform_lemma):
-                        out_file = WORD_FILES[ 'bad' ][0]
-                        out_file.write("{}\t{}\t{}\n".format(flexform_lemma, posgr, frequency).encode('utf-8'))
-                        continue
-                # Split pair again after transliteration
-                tokens = flexform_lemma.split()
-                flexform, lemma = tokens
-                _logger_.debug('Converted flexform={}, lemma={}, posgr={}'.format(flexform, lemma, posgr))
+    with open("serbian-wordlist.xml", "wb") as freqfile:
+        with open(_args_.input_file) as f:
+            for line in f:
+                # Remove end of line
+                line = line.strip()
+                cnt += 1
+                tokens = line.split('\t')
+                if len(tokens) == 5:
+                    matchcnt += 1
+                    flexform = tokens[0]
+                    lemma = tokens[1]
+                    posgr = tokens[2]
+                    frequency = tokens[3]
+                                    # We need to do transliterating here in order to avoid transliterating POS tag :(
+                    flexform_lemma = f"{flexform}\t{lemma}"
+                    if lemma.upper() not in ('I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'):
+                        # Transliterate all words in line, replacing Latin with Cyrillic characters
+                        flexform_lemma = _l2comp_.sub(lambda m: _l2conv_[m.group()], flexform_lemma)
+                        # Replace words according to replace map
+                        flexform_lemma = _ciregex_.sub(lambda mo: _cirdict_[mo.string[mo.start():mo.end()]], flexform_lemma)
+                        if has_bad_letters(flexform_lemma):
+                            out_file = WORD_FILES[ 'bad' ][0]
+                            out_file.write(f"{flexform_lemma}\t{posgr}\t{frequency}\n".encode('utf-8'))
+                            continue
+                    # Split pair again after transliteration
+                    tokens = flexform_lemma.split()
+                    flexform, lemma = tokens
+                    _logger_.debug(f'Converted flexform={flexform}, lemma={lemma}, posgr={posgr}')
 
-                # Determine file to write line in ...
-                out_file = get_words_out_file(lemma[0])
-                # Create line for writing in file
-                out_file.write("{}\t{}\t{}\t{}\n".format(
-                    flexform, lemma, posgr, frequency).encode('utf-8'))
-                # Write to frequency file
-                if posgr != 'Z':
-                    freqfile.write('<w f="{}" flags="">{}</w>\n'.format(_freqmap_[ int(frequency) ], flexform).encode('utf-8'))
-            else:
-                _logger_.warn("Unmatched line: {}".format(line))
-            if cnt > _args_.first_n_lines > 0:
-                break
-        f.close()
-    freqfile.close()
-    _logger_.info("PASS 2: Finished processing input file '{}': total {} lines, {} matching lines.".format(
-        _args_.input_file, cnt, matchcnt))
+                    # Determine file to write line in ...
+                    out_file = get_words_out_file(lemma[0])
+                                    # Create line for writing in file
+                    out_file.write(f"{flexform}\t{lemma}\t{posgr}\t{frequency}\n".encode('utf-8'))
+                                    # Write to frequency file
+                    if posgr != 'Z':
+                        freqfile.write(
+                            f'<w f="{_freqmap_[int(frequency)]}" flags="">{flexform}</w>\n'.encode(
+                                'utf-8'
+                            )
+                        )
+
+                else:
+                    _logger_.warn(f"Unmatched line: {line}")
+                if cnt > _args_.first_n_lines > 0:
+                    break
+            f.close()
+    _logger_.info(
+        f"PASS 2: Finished processing input file '{_args_.input_file}': total {cnt} lines, {matchcnt} matching lines."
+    )
 
 
 if __name__ == "__main__":

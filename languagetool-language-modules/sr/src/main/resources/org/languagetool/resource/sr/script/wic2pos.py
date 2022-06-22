@@ -25,7 +25,7 @@ If entries are in Croatian Latin script, they will be converted into Serbian Cyr
 """
 
 _args_, _logger_, _l2comp_, _l2conv_, _ciregex_, _freqs_, _cirdict_ = None, None, None, None, None, list(), None
-_freqmap_ = dict()
+_freqmap_ = {}
 
 LOG_FORMAT = '%(asctime)-15s %(levelname)s %(message)s'
 CYR_LETTERS = {
@@ -107,7 +107,7 @@ def parse_args():
         _logger_.setLevel( logging.DEBUG )
     else:
         _logger_.setLevel( logging.INFO )
-    _logger_.debug( "Command-line arguments: {}".format(_args_) )
+    _logger_.debug(f"Command-line arguments: {_args_}")
     if not _args_.input_file:
         _logger_.error("Input file (-i) was not specified, aborting ...")
         sys.exit(1)
@@ -118,10 +118,13 @@ def parse_args():
         _logger_.error("Map file (-m) was not specified, aborting ...")
         sys.exit(1)
     if not os.path.exists(_args_.input_file):
-        _logger_.error("Input file '{}' does not exist, aborting ...".format(_args_.input_file))
+        _logger_.error(
+            f"Input file '{_args_.input_file}' does not exist, aborting ..."
+        )
+
         sys.exit(1)
     if not os.path.exists(_args_.map_file):
-        _logger_.error("Map file '{}' does not exist, aborting ...".format(_args_.map_file))
+        _logger_.error(f"Map file '{_args_.map_file}' does not exist, aborting ...")
         sys.exit(1)
 
 
@@ -133,19 +136,24 @@ def open_out_files():
         out_dir = os.path.join(_args_.base_dir, lett)
         if not os.path.exists( out_dir ):
             os.makedirs( out_dir )
-        WORD_FILES[ cl ] = list()
-        _logger_.debug( "Opening file {}/{}-wic-words.txt ...".format(out_dir, lett) )
-        WORD_FILES[ cl ].append( open( os.path.join(out_dir, lett + '-wic-words.txt'), 'wb' ) )
-        _logger_.debug( "Opening file {}/{}-wic-names.txt ...".format(out_dir, lett) )
-        WORD_FILES[ cl ].append( open( os.path.join(out_dir, lett + '-wic-names.txt'), 'wb' ) )
+        WORD_FILES[ cl ] = []
+        _logger_.debug(f"Opening file {out_dir}/{lett}-wic-words.txt ...")
+        WORD_FILES[cl].append(
+            open(os.path.join(out_dir, f'{lett}-wic-words.txt'), 'wb')
+        )
+
+        _logger_.debug(f"Opening file {out_dir}/{lett}-wic-names.txt ...")
+        WORD_FILES[cl].append(
+            open(os.path.join(out_dir, f'{lett}-wic-names.txt'), 'wb')
+        )
 
 
 # Close all files containing words
 def close_out_files():
     for cl, lett_files in WORD_FILES.items():
-        _logger_.debug('Closing file {}-wic-words.txt ...'.format(CYR_LETTERS[ cl ]))
+        _logger_.debug(f'Closing file {CYR_LETTERS[cl]}-wic-words.txt ...')
         lett_files[0].close()
-        _logger_.debug('Closing file {}-wic-names.txt ...'.format(CYR_LETTERS[ cl ]))
+        _logger_.debug(f'Closing file {CYR_LETTERS[cl]}-wic-names.txt ...')
         lett_files[1].close()
 
 
@@ -154,19 +162,17 @@ def init():
     global _l2conv_, _l2comp_, _ciregex_, _cirdict_
     # Create conversion dictionary for Latin to Cyrillic conversion
     _l2conv_ = dict(zip(LAT_LIST, CIR_UTF_LIST))
-    _logger_.debug("Conversion dictionary Lat/Cir: {}".format(_l2conv_))
+    _logger_.debug(f"Conversion dictionary Lat/Cir: {_l2conv_}")
     _l2comp_ = re.compile('|'.join(_l2conv_))
     # Read map file and populate map dictionary
     with open(_args_.map_file) as infile:
         _cirdict_ = dict(x.strip().split(None, 1) for x in infile if x.strip())
     # Compile dictionary
     keys = sorted(_cirdict_.keys(), key=len, reverse=True)
-    expression = []
-    for item in keys:
-        expression.append(re.escape(item))
-    _logger_.debug("Replace map: {}".format(_cirdict_))
+    expression = [re.escape(item) for item in keys]
+    _logger_.debug(f"Replace map: {_cirdict_}")
     # Create a regular expression  from the dictionary keys
-    _ciregex_ = re.compile("(%s)" % "|".join(expression))
+    _ciregex_ = re.compile(f'({"|".join(expression)})')
 
 
 # Determine output file for word tripple
@@ -174,13 +180,14 @@ def init():
 def get_words_out_file( first_char ):
     if first_char.lower() in WORD_FILES:
         # Is this really a lower case?
-        if first_char == first_char.lower():
-            out_file = WORD_FILES[ first_char.lower() ][0]
-        else:
-            out_file = WORD_FILES[ first_char.lower() ][1]
+        return (
+            WORD_FILES[first_char.lower()][0]
+            if first_char == first_char.lower()
+            else WORD_FILES[first_char.lower()][1]
+        )
+
     else:
-        out_file = WORD_FILES[ 'misc' ][0]
-    return out_file
+        return WORD_FILES[ 'misc' ][0]
 
 numeral_map = tuple(zip(
     (1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1),
@@ -306,9 +313,12 @@ def getAdjectiveTag(flexform, parts):
         gender = gender_types[ parts[3] ]
         degree = degree_types[ parts[4] ]
     except KeyError:
-        _logger_.error("getAdjectiveTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getAdjectiveTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "A" + atype + degree + gender + number + case
+    return f"A{atype}{degree}{gender}{number}{case}"
 
 # Adverb (Adv) - прилог
 def getAdverbTag(flexform, parts):
@@ -316,18 +326,24 @@ def getAdverbTag(flexform, parts):
         atype = adverb_types[ parts[0] ]
         degree = degree_types[ parts[1] ]
     except KeyError:
-        _logger_.error("getAdverbTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getAdverbTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "R" + atype + degree
+    return f"R{atype}{degree}"
 
 # Conjunction - везник
 def getConjunctionTag(flexform, parts):
     try:
         ctype = conjunction_types[ parts[0] ]
     except KeyError:
-        _logger_.error("getConjunctionTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getConjunctionTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "C" + ctype
+    return f"C{ctype}"
 
 # Interjection - узвик
 def getInterjectionTag(flexform, parts):
@@ -341,9 +357,12 @@ def getNounTag(flexform, parts):
         number = number_types[ parts[2] ]
         gender = gender_types[ parts[3] ]
     except KeyError:
-        _logger_.error("getNounTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getNounTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "N" + ntype + gender + number + case
+    return f"N{ntype}{gender}{number}{case}"
 
 # Numeral - број
 def getNumeralTag(flexform, parts):
@@ -353,9 +372,12 @@ def getNumeralTag(flexform, parts):
         number = number_types[ parts[2] ]
         case   = case_types[ parts[3] ]
     except KeyError:
-        _logger_.error("getNumeralTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getNumeralTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "Ml" + ntype + gender + number + case
+    return f"Ml{ntype}{gender}{number}{case}"
 
 # Pronoun - заменица
 def getPronounTag(flexform, parts):
@@ -366,9 +388,12 @@ def getPronounTag(flexform, parts):
         gender = gender_types[ parts[3] ]
         case   = case_types[ parts[4] ]
     except KeyError:
-        _logger_.error("getPronounTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getPronounTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "P" + ptype + person + gender + number + case
+    return f"P{ptype}{person}{gender}{number}{case}"
 
 # Preposition - предлог
 def getPrepositionTag(flexform, parts):
@@ -384,9 +409,12 @@ def getVerbTag(flexform, parts):
         gender   = gender_types[ parts[4] ]
         negation = parts[5]
     except KeyError:
-        _logger_.error("getVerbTag: Error parsing tag '{}', flexform '{}'".format(parts, flexform))
+        _logger_.error(
+            f"getVerbTag: Error parsing tag '{parts}', flexform '{flexform}'"
+        )
+
         sys.exit(1)
-    return "V" + vtype + vform + person + number + gender + negation
+    return f"V{vtype}{vform}{person}{number}{gender}{negation}"
 
 
 # Maps tags to "normal" POS tags
@@ -426,7 +454,7 @@ def has_bad_letters(word):
 def parse_file():
     cnt = 0
     matchcnt = 0
-    _logger_.info("Started processing input file '{}' ...".format(_args_.input_file))
+    _logger_.info(f"Started processing input file '{_args_.input_file}' ...")
 
     with open(_args_.input_file) as f:
         for line in f:
@@ -445,7 +473,7 @@ def parse_file():
                 or wictag.startswith('A_rel'):
                     continue
                 # We need to do transliterating here in order to avoid transliterating POS tag :(
-                flexform_lemma = "{}\t{}".format(flexform, lemma)
+                flexform_lemma = f"{flexform}\t{lemma}"
                 # Transliterate all words in line, replacing Latin with Cyrillic characters
                 flexform_lemma = _l2comp_.sub(lambda m: _l2conv_[m.group()], flexform_lemma)
                 # Replace words according to word replace map (Eiffel => Ајфел)
@@ -456,18 +484,22 @@ def parse_file():
                 if has_bad_letters(flexform_lemma):
                     out_file = WORD_FILES[ 'bad' ][0]
                     posgr = getPOStag(flexform, wictag)
-                    out_file.write("{}\t{}\t0\n".format(flexform_lemma, posgr).encode('utf-8'))
+                    out_file.write(f"{flexform_lemma}\t{posgr}\t0\n".encode('utf-8'))
                     continue
                 # Split pair again after transliteration
                 tokens = flexform_lemma.split()
                 try:
                     flexform, lemma = tokens
                 except ValueError:
-                    _logger_.error("Too many values to unpack: tokens '{}', line '{}'".format(tokens, line))
+                    _logger_.error(f"Too many values to unpack: tokens '{tokens}', line '{line}'")
                     continue
                 posgr = getPOStag(flexform, wictag)
-                _logger_.debug('Converted flexform={}, lemma={}, posgr={}'.format(flexform, lemma, posgr))
-                if posgr[0] in ( 'M', 'S', '0' ) or (len(posgr) in (1,2) and posgr[0] in ('N', 'A', 'V')):
+                _logger_.debug(f'Converted flexform={flexform}, lemma={lemma}, posgr={posgr}')
+                if (
+                    posgr[0] in ('M', 'S', '0')
+                    or len(posgr) in {1, 2}
+                    and posgr[0] in ('N', 'A', 'V')
+                ):
                     # We will skip:
                     # 1. prepositions because of lack of information about the case they go with
                     # 2. numerals because of lack of type
@@ -476,9 +508,9 @@ def parse_file():
                 # Determine file to write line in ...
                 out_file = get_words_out_file(lemma[0])
                 # Create line for writing in file
-                out_file.write("{}\t{}\t{}\t0\n".format(flexform, lemma, posgr).encode('utf-8'))
+                out_file.write(f"{flexform}\t{lemma}\t{posgr}\t0\n".encode('utf-8'))
             else:
-                _logger_.warn("Unmatched line: {}".format(line))
+                _logger_.warn(f"Unmatched line: {line}")
             if cnt > _args_.first_n_lines > 0:
                 break
         f.close()
@@ -486,11 +518,12 @@ def parse_file():
     for i in range(11,1000):
         roman = int_to_roman(i)
         out_file = get_words_out_file(str(i % 10))
-        out_file.write("{}\t{}\tMrc\t0\n".format(roman, roman).encode('utf-8'))
+        out_file.write(f"{roman}\t{roman}\tMrc\t0\n".encode('utf-8'))
         roman = roman.lower()
-        out_file.write("{}\t{}\tMrc\t0\n".format(roman, roman).encode('utf-8'))
-    _logger_.info("Finished processing input file '{}': total {} lines, {} matching lines.".format(
-        _args_.input_file, cnt, matchcnt))
+        out_file.write(f"{roman}\t{roman}\tMrc\t0\n".encode('utf-8'))
+    _logger_.info(
+        f"Finished processing input file '{_args_.input_file}': total {cnt} lines, {matchcnt} matching lines."
+    )
 
 
 if __name__ == "__main__":
