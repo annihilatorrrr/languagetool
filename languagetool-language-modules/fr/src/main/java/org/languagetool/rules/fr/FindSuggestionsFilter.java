@@ -21,7 +21,7 @@ package org.languagetool.rules.fr;
 import org.languagetool.AnalyzedSentence;
 import org.languagetool.AnalyzedToken;
 import org.languagetool.AnalyzedTokenReadings;
-import org.languagetool.JLanguageTool;
+import org.languagetool.ResourceBundleTools;
 import org.languagetool.language.French;
 import org.languagetool.rules.AbstractFindSuggestionsFilter;
 import org.languagetool.rules.RuleMatch;
@@ -32,17 +32,22 @@ import org.languagetool.tagging.fr.FrenchTagger;
 import org.languagetool.tools.StringTools;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.regex.Pattern;
 
 public class FindSuggestionsFilter extends AbstractFindSuggestionsFilter {
+
+  private static final Pattern ENDS_IN_VOWEL = Pattern.compile("[aeioué]$");
+  private static final Pattern PATTERN = Pattern.compile("^[smntl]'|^(nous|vous|le|la|les|me|te|se|leur|en|y) ");
 
   private static MorfologikFrenchSpellerRule morfologikRule;
   
   public FindSuggestionsFilter() throws IOException {
     if (morfologikRule == null) {
-      ResourceBundle messages = JLanguageTool.getDataBroker().getResourceBundle(JLanguageTool.MESSAGE_BUNDLE,
-          new Locale("fr"));
-      morfologikRule = new MorfologikFrenchSpellerRule(messages, new French(), null, Collections.emptyList());
+      ResourceBundle messages = ResourceBundleTools.getMessageBundle(French.getInstance());
+      morfologikRule = MorfologikFrenchSpellerRule.getRule(messages);
     }
   }
 
@@ -70,7 +75,7 @@ public class FindSuggestionsFilter extends AbstractFindSuggestionsFilter {
     if (w.endsWith("s")) {
       wordsToCheck.add(w.substring(0, w.length() - 1));
     }
-    if (w.matches("[aeioué]$")) {
+    if (ENDS_IN_VOWEL.matcher(w).matches()) {
       wordsToCheck.add(w + "s");
     }
     for (String word : wordsToCheck) {
@@ -89,7 +94,7 @@ public class FindSuggestionsFilter extends AbstractFindSuggestionsFilter {
   @Override
   protected String cleanSuggestion(String s) {
     //remove pronouns before verbs
-    String output = s.replaceAll("^[smntl]'|^(nous|vous|le|la|les|me|te|se|leur|en|y) ", "");
+    String output = PATTERN.matcher(s).replaceAll("");
     //check only first element 
     output = output.split(" ")[0];
     return output;

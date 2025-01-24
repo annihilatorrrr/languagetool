@@ -75,9 +75,12 @@ public abstract class AbstractUnitConversionRule extends Rule {
 
   protected static final Unit<Temperature> FAHRENHEIT = CELSIUS.multiply(5.0/9.0).shift(-32);
   // limit size of matched number to (possibly) avoid hangups
+  // we need a different regex for including a word boundary (\b), instead of just prepending that
+  // because otherwise negative numbers aren't correctly recognized
   protected static final String NUMBER_REGEX = "(-?[0-9]{1,32}[0-9,.]{0,32})";
+  protected static final String NUMBER_REGEX_WITH_BOUNDARY = "(-?\\b[0-9]{1,32}[0-9,.]{0,32})";
 
-  protected final Pattern numberRangePart = Pattern.compile("\\b" + NUMBER_REGEX + "$");
+  protected final Pattern numberRangePart = Pattern.compile(NUMBER_REGEX_WITH_BOUNDARY + "$");
   
   private static final double DELTA = 1e-2;
   private static final double ROUNDING_DELTA = 0.05;
@@ -193,7 +196,7 @@ public abstract class AbstractUnitConversionRule extends Rule {
    */
   protected void addUnit(String pattern, Unit base, String symbol, double factor, boolean metric) {
     Unit unit = base.multiply(factor);
-    unitPatterns.put(Pattern.compile("\\b" + NUMBER_REGEX + "[\\s\u00A0]{0," + WHITESPACE_LIMIT + "}" + pattern + "\\b"), unit);
+    unitPatterns.put(Pattern.compile(NUMBER_REGEX_WITH_BOUNDARY + "[\\s\u00A0]{0," + WHITESPACE_LIMIT + "}" + pattern + "\\b"), unit);
     unitSymbols.putIfAbsent(unit, new ArrayList<>());
     unitSymbols.get(unit).add(symbol);
     if (metric && !metricUnits.contains(unit)) {
@@ -210,7 +213,7 @@ public abstract class AbstractUnitConversionRule extends Rule {
     addUnit("t", KILOGRAM, "t", 1e3, true);
 
     addUnit("lb", POUND, "lb", 1, false);
-    addUnit("oz", OUNCE, "oz", 1, false);
+    //addUnit("oz", OUNCE, "oz", 1, false); -- probably not useful, see https://github.com/languagetooler-gmbh/languagetool-premium/issues/4560
 
     addUnit("mi", MILE, "mi", 1, false);
     addUnit("yd", YARD, "yd", 1, false);
@@ -416,7 +419,8 @@ public abstract class AbstractUnitConversionRule extends Rule {
     return numberRangePart.matcher(textBefore).find();
   }
 
-  private void tryConversion(AnalyzedSentence sentence, List<RuleMatch> matches, Pattern unitPattern, Double customValue, Unit customUnit, Matcher unitMatcher, List<Map.Entry<Integer, Integer>> ignoreRanges) {
+  private void tryConversion(AnalyzedSentence sentence, List<RuleMatch> matches, Pattern unitPattern, Double customValue,
+                             Unit customUnit, Matcher unitMatcher, List<Map.Entry<Integer, Integer>> ignoreRanges) {
     Map.Entry<Integer, Integer> range = new AbstractMap.SimpleImmutableEntry<>(
       unitMatcher.start(), unitMatcher.end());
     ignoreRanges.add(range);
@@ -478,6 +482,12 @@ public abstract class AbstractUnitConversionRule extends Rule {
         .findFirst();
       if (convertedUnitPattern.isPresent()) { // known unit used for conversion
         Unit convertedUnit = unitPatterns.get(convertedUnitPattern.get());
+        // If the unit before and after conversion is the same, e.g. "22.3 cm (20.4 cm)", assume users either:
+        // 1. know what they're doing; or
+        // 2. there's a more complex expression at play here, which we can't parse
+        if (unit.equals(convertedUnit)) {
+          return;
+        }
         Double convertedValueInText;
         try {
           convertedValueInText = getNumberFormat().parse(convertedMatcher.group(1)).doubleValue();

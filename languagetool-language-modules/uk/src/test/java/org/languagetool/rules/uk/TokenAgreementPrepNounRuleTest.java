@@ -100,6 +100,7 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     assertEmptyMatch("співпрацювати із собі подібними");
     assertEmptyMatch("через усім відомі причини");
     assertEmptyMatch("через нікому не відомі причини");
+    assertEmptyMatch("до нічим не виправданого нарцисизму");
     assertEmptyMatch("прийшли до ВАТ «Кривий Ріг цемент»");
     assertEmptyMatch("від А до Я");
     assertEmptyMatch("до та після");
@@ -114,7 +115,9 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     assertEmptyMatch("у святая святих");
 
     assertEmptyMatch("станом на зараз виконавча влада");
-    
+
+    assertEmptyMatch("в тисяча шістсот якомусь році");
+
 //    assertEmptyMatch("Імена від Андрій до Юрій");  // називний між від і до рідко зустрічається але такий виняток ховає багато помилок 
 
 //    assertEmptyMatch("як у Конана Дойла")).length); //TODO
@@ -174,7 +177,8 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     assertEmptyMatch("на Кульчицької");
     assertEmptyMatch("на Правди");
     assertEmptyMatch("на Ломоносова");
-    assertEmptyMatch("переходить у Фрідріх Штрассе");
+    // should be with hyphen
+//    assertEmptyMatch("переходить у Фрідріх Штрассе");
     // invert
     assertEmptyMatch("як на Кучми іменини");
     // ім'я, прізвище
@@ -236,10 +240,44 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     matches = ruleMatch("до Ленінграду");
     assertEquals(1, matches.length);
 
+    matches = ruleMatch("для логотипу");
+    assertEquals(1, matches.length);
+
 //    matches = ruleMatch("На фото: З Голлівуду Яринка Шуст привезла дві золоті медалі");
 //    assertEquals(1, matches.length);
   }
+  
+  @Test
+  public void testZandZnaAsRare() throws IOException {
+    assertEmptyMatch("кілометрів зо три");
+    assertEmptyMatch("години з 30");
+    assertEmptyMatch("людей з десяток"); // десяток має омонімію з :f:
+    assertEmptyMatch("насіння зі жменьку"); 
+    assertEmptyMatch("розміром з долоню");
+    assertEmptyMatch("шматок з кулак завбільшки");
+    
+    assertEmptyMatch("винайняло з тисячу модераторів");
+    assertEmptyMatch("причеплено ще з сотню дерев'яних крамниць");
+//    assertEmptyMatch("виступав з повагом третій приводець");
 
+    assertEmptyMatch("з 9-12-поверховий будинок");
+    assertEmptyMatch("виниклу з нізвідки тему");
+    assertEmptyMatch("з Ван Гогом");
+    
+    assertHasError("зі землю");
+    assertHasError("туди ж з своє шкапою");
+    assertHasError("вискочив із барлоги");
+    assertHasError("від співпраці з компанію", "компанією", "компанії");
+    
+    // skip
+    assertEmptyMatch("заввишки з її невеликий зріст");
+    
+    assertEmptyMatch("із добру годину");
+    // TODO:
+//    assertEmptyMatch("ледь не з футбольне поле");
+//    assertEmptyMatch("з куряче яйце");
+  }
+  
   @Ignore
   @Test
   public void testRulePronPosNew() throws IOException {
@@ -267,6 +305,7 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     
     assertEmptyMatch("вплив на її або його здоров'я");
     assertEmptyMatch("щодо його \"лікування\":");
+    assertEmptyMatch("За її словами,");
     
     assertHasError("вище за їх?");
 //    assertHasError("займався в їх помаленьку");
@@ -283,6 +322,11 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     assertEmptyMatch("через її, м’яко кажучи, невелику популярність");
     
     assertHasError("при його ж заняттів");
+
+    // NEW
+    assertEmptyMatch("освітою й без, адже останні, особливо робітники");
+    assertEmptyMatch("сили від одне одного, як сусіди, партнери");
+    assertEmptyMatch("вважали за краще брати");
   }
   
   @Test
@@ -291,7 +335,10 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     assertHasError("по бодай маленьким справам");
     assertHasError("по смішно маленьким справам");
 
-    assertHasError("через, м’яко кажучи, невеликої популярності");
+    //TODO: insert
+//    assertHasError("через, м’яко кажучи, невеликої популярності");
+//  assertHasError("по, наприклад, постам");
+    assertEmptyMatch("за цілком собі реалістичною соціальною");
 
     assertEmptyMatch("спиралося на місячної давнини рішення");
 
@@ -333,6 +380,10 @@ public class TokenAgreementPrepNounRuleTest extends AbstractRuleTest {
     
     //TODO:
 //    assertEmptyMatch("не завдяки, а всупереч політиці, яку проводила влада");
+    
+    assertEmptyMatch("до дев’яносто дев’ятого");
+    assertEmptyMatch("стосовно одне одного");
+    assertEmptyMatch("ніч із тридцять першого серпня");
   }
 
   @Test

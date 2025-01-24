@@ -26,6 +26,7 @@ import org.languagetool.rules.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Check consistent spelling for German compounds. It's a style issue
@@ -48,7 +49,7 @@ public class CompoundCoherencyRule extends TextLevelRule {
 
   @Override
   public String getDescription() {
-    return "Einheitliche Schreibung bei Komposita (mit oder ohne Bindestrich)";
+    return "Einheitliche Schreibweise bei Komposita (mit oder ohne Bindestrich)";
   }
 
   @Override

@@ -44,10 +44,10 @@ public class SimpleReplaceMultiwordsRule extends AbstractSimpleReplaceRule2 {
   private static final Locale CA_LOCALE = new Locale("ca");
 
   public SimpleReplaceMultiwordsRule(final ResourceBundle messages) throws IOException {
-    super(messages, new Catalan());
-    super.setCategory(Categories.GRAMMAR.getCategory(messages));
+    super(messages, Catalan.getInstance());
+    setCategory(Categories.GRAMMAR.getCategory(messages));
     setLocQualityIssueType(ITSIssueType.Grammar);
-    super.useSubRuleSpecificIds();
+    useSubRuleSpecificIds();
   }
 
   @Override
@@ -57,7 +57,7 @@ public class SimpleReplaceMultiwordsRule extends AbstractSimpleReplaceRule2 {
 
   @Override
   public String getDescription() {
-    return "Expressions inadequades";
+    return "Expressions inadequades: $match";
   }
 
   @Override
@@ -78,11 +78,6 @@ public class SimpleReplaceMultiwordsRule extends AbstractSimpleReplaceRule2 {
   @Override
   public String getMessage() {
     return "Expressió incorrecta.";
-  }
-
-  @Override
-  public URL getUrl() {
-    return null;
   }
 
 }

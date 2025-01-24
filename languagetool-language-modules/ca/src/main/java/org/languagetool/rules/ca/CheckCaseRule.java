@@ -18,6 +18,7 @@
  */
 package org.languagetool.rules.ca;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +34,7 @@ public class CheckCaseRule  extends AbstractCheckCaseRule {
   
   public CheckCaseRule(ResourceBundle messages, Language language) {
     super(messages, language);
+    useSubRuleSpecificIds();
   }
 
   @Override
@@ -47,7 +49,7 @@ public class CheckCaseRule  extends AbstractCheckCaseRule {
 
   @Override
   public String getDescription() {
-    return "Comprova majúscules i minúscules";
+    return "Comprova majúscules i minúscules: $match";
   }
 
   @Override
@@ -57,7 +59,7 @@ public class CheckCaseRule  extends AbstractCheckCaseRule {
 
   @Override
   public String getMessage() {
-    return "Majúscules i minúscules recomanades.";
+    return "Majúscules i minúscules recomanades. Alguns llibres d'estil poden suggerir solucions diferents en alguns casos.";
   }
   
   @Override

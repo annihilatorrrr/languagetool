@@ -55,8 +55,8 @@ public abstract class ConfusionProbabilityRule extends Rule {
   public static final float MIN_COVERAGE = 0.5f;
   // the minimum value the more probable variant needs to have to be considered:
   private static final double MIN_PROB = 0.0;  // try values > 0 to avoid false alarms
-
   private static final boolean DEBUG = false;  // also see DEBUG in BaseLanguageModel.java
+  private static final Pattern REAL_WORD = Pattern.compile("\\p{L}+");
 
   // Speed up the server use case, where rules get initialized for every call:
   private static final LoadingCache<PathAndLanguage, Map<String, List<ConfusionPair>>> confSetCache = CacheBuilder.newBuilder()
@@ -214,7 +214,7 @@ public abstract class ConfusionProbabilityRule extends Rule {
   }
 
   private boolean isRealWord(String token) {
-    return token.matches("[\\p{L}]+");
+    return REAL_WORD.matcher(token).matches();
   }
 
   private boolean isLocalException(AnalyzedSentence sentence, GoogleToken googleToken) {
@@ -375,6 +375,18 @@ public abstract class ConfusionProbabilityRule extends Rule {
       super(messages, lm, lang);
       this.id = Objects.requireNonNull(id);
       this.desc = desc;
+      if (lang.getShortCode().equals("en") &&
+          (id.equals("CONFUSION_RULE_BARE_BEAR") || id.equals("CONFUSION_RULE_BEAR_BARE"))) {
+        this.setUrl(Tools.getUrl("https://languagetool.org/insights/post/spelling-bear-vs-bare-with-me/"));
+      }
+      if (lang.getShortCode().equals("en") &&
+          (id.equals("CONFUSION_RULE_DISCREET_DISCRETE") || id.equals("CONFUSION_RULE_DISCRETE_DISCREET"))) {
+        this.setUrl(Tools.getUrl("https://languagetool.org/insights/post/discrete-vs-discreet/"));
+      }
+      if (lang.getShortCode().equals("en") &&
+        (id.equals("CONFUSION_RULE_PRECEDENTS_PRECEDENCE") || id.equals("CONFUSION_RULE_PRECEDENCE_PRECEDENTS"))) {
+        this.setUrl(Tools.getUrl("https://languagetool.org/insights/post/precedence-or-precedent/"));
+      }
     }
     @Override
     public String getId() {

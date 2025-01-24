@@ -86,11 +86,11 @@ public class MatchState {
     }
     setToken(tokens[idx]);
     IncludeRange includeSkipped = match.getIncludeSkipped();
+    if (includeSkipped == IncludeRange.FOLLOWING) {
+      formattedToken = null;
+    }
     if (next > 1 && includeSkipped != IncludeRange.NONE) {
       StringBuilder sb = new StringBuilder();
-      if (includeSkipped == IncludeRange.FOLLOWING) {
-        formattedToken = null;
-      }
       for (int k = index + 1; k < index + next; k++) {
         if (tokens[k].isWhitespaceBefore()
             && !(k == index + 1 && includeSkipped == IncludeRange.FOLLOWING)) {
@@ -221,6 +221,9 @@ public class MatchState {
       Pattern pRegexMatch = match.getRegexMatch();
       String regexReplace = match.getRegexReplace();
       if (pRegexMatch != null) {
+        if (lang != null && lang.getShortCode().equals("ar")) {
+           formattedString[0] = StringTools.removeTashkeel(formattedString[0]);
+        }
         formattedString[0] = pRegexMatch.matcher(formattedString[0]).replaceAll(regexReplace);
       }
 
@@ -285,7 +288,7 @@ public class MatchState {
       original = formattedToken != null ? formattedToken.getToken() : "";
     }
     for (int i = 0; i < formattedString.length; i++) {
-      formattedString[i] = convertCase(formattedString[i], original, lang);
+      formattedString[i] = convertCase((formattedString[i] != null ? formattedString[i] : ""), original, lang);
     }
     // TODO should case conversion happen before or after including skipped tokens?
     IncludeRange includeSkipped = match.getIncludeSkipped();
@@ -322,33 +325,31 @@ public class MatchState {
    */
   // FIXME: gets only the first POS tag that matches, this can be wrong
   // on the other hand, many POS tags = too many suggestions?
+  // POS tags can be chosen by the synthesizer of each language: synthesizer.getTargetPosTag()
   public final String getTargetPosTag() {
     String targetPosTag = match.getPosTag();
     List<String> posTags = new ArrayList<>();
     Pattern pPosRegexMatch = match.getPosRegexMatch();
     String posTagReplace = match.getPosTagReplace();
-
     if (match.isStaticLemma()) {
       for (AnalyzedToken analyzedToken : matchedToken) {
         String tst = analyzedToken.getPOSTag();
         if (tst != null && pPosRegexMatch.matcher(tst).matches()) {
-          targetPosTag = analyzedToken.getPOSTag();
-          posTags.add(targetPosTag);
+          posTags.add(tst);
         }
       }
-      
+      targetPosTag = synthesizer.getTargetPosTag(posTags, targetPosTag);
       if (pPosRegexMatch != null && posTagReplace != null && !posTags.isEmpty()) {
-        targetPosTag = pPosRegexMatch.matcher(targetPosTag).replaceAll(
-            posTagReplace);
+        targetPosTag = pPosRegexMatch.matcher(targetPosTag).replaceAll(posTagReplace);
       }
     } else {
       for (AnalyzedToken analyzedToken : formattedToken) {
         String tst = analyzedToken.getPOSTag();
         if (tst != null && pPosRegexMatch.matcher(tst).matches()) {
-          targetPosTag = analyzedToken.getPOSTag();
-          posTags.add(targetPosTag);
+          posTags.add(tst);
         }
       }
+      targetPosTag = synthesizer.getTargetPosTag(posTags, targetPosTag);
       if (pPosRegexMatch != null && posTagReplace != null) {
         if (posTags.isEmpty()) {
           posTags.add(targetPosTag);

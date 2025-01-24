@@ -1426,7 +1426,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
             <translation lang="pt">alongar</translation>
         </rule>
     </rulegroup>
-    <rulegroup id="ALSO">
+    <rulegroup id="ALSO" default="off">
         <rule>
             <pattern lang="en">
                 <token>also</token>
@@ -2509,7 +2509,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
             <translation lang="en">navy</translation>
         </rule>
     </rulegroup>
-    <rulegroup id="ART">
+    <rulegroup id="ART" default="off">
         <rule>
             <pattern lang="en">
                 <token>art</token>
@@ -5346,7 +5346,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
                 <token>criminal</token>
             </pattern>
             <translation lang="pl">przestępca</translation>
-            <translation lang="en">kryminalista</translation>
+            <translation lang="pl">kryminalista</translation>
         </rule>
         <rule>
             <pattern lang="pl">
@@ -6212,7 +6212,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
              <translation lang="pt">ftrancar</translation>
         </rule>
     </rulegroup>
-    <rulegroup id="ENGAGEMENT">
+    <rulegroup id="ENGAGEMENT" default="off">
         <rule>
             <pattern lang="en">
                 <token>engagement</token>
@@ -7068,7 +7068,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
             <translation lang="en">speed</translation>
         </rule>
     </rulegroup>
-    <rulegroup id="FAST">
+    <rulegroup id="FAST" default="off">
         <rule>
             <pattern lang="en">
                 <token>fast</token>
@@ -8003,7 +8003,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
         </rule>
     </rulegroup>
     <rulegroup id="GROSS">
-        <rule>
+        <rule default="off">
             <pattern lang="en">
                 <token>gross</token>
             </pattern>
@@ -11855,7 +11855,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
             <translation lang="it">comprendere</translation>
             <translation lang="pl">zdawać sobie sprawę</translation>
             <translation lang="pl">pojmować</translation>
-            <translation lang="es">percatarse</translation>
+            <!--<translation lang="es">percatarse</translation>-->
             <translation lang="gl">decatarse</translation>
             <translation lang="gl">darse conta</translation>
             <translation lang="ru">точно пpедставлять</translation>
@@ -11921,7 +11921,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
             <translation lang="en">container</translation>
         </rule>
     </rulegroup>
-    <rulegroup id="RECEIPT">
+    <rulegroup id="RECEIPT" default="off">
         <rule>
             <pattern lang="en">
                 <token inflected="yes">receipt</token>

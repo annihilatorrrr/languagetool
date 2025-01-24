@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @since 5.0
@@ -35,10 +36,14 @@ public class FastTextDetector {
   private static final Logger logger = LoggerFactory.getLogger(FastTextDetector.class);
   private static final int K_HIGHEST_SCORES = 5;
   private static final int BUFFER_SIZE = 4096;
+  private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
-  private final Process fasttextProcess;
-  private final Reader fasttextIn;
-  private final Writer fasttextOut;
+  private Process fasttextProcess;
+  private Reader fasttextIn;
+  private Writer fasttextOut;
+  
+  private File modelPath;
+  private File binaryPath;
 
   public static class FastTextException extends RuntimeException {
     private final boolean disabled;
@@ -57,6 +62,12 @@ public class FastTextDetector {
   }
 
   public FastTextDetector(File modelPath, File binaryPath) throws IOException {
+    this.modelPath = modelPath;
+    this.binaryPath = binaryPath;
+    init();
+  }
+  
+  private void init() throws IOException{
     fasttextProcess = new ProcessBuilder(binaryPath.getPath(), "predict-prob", modelPath.getPath(), "-", "" + K_HIGHEST_SCORES).start();
     // avoid buffering, we want to flush/read all data immediately
     // might cause mixup
@@ -72,7 +83,7 @@ public class FastTextDetector {
   }
 
   public Map<String, Double> runFasttext(String text, List<String> additionalLanguageCodes) throws IOException {
-    String joined = text.replace("\n", " ").toLowerCase(Locale.ROOT);
+    String joined = text.replace('\n', ' ').toLowerCase(Locale.ROOT);
     char[] cbuf = new char[BUFFER_SIZE];
     synchronized (this) {
       fasttextOut.write(joined + System.lineSeparator());
@@ -100,7 +111,7 @@ public class FastTextDetector {
 
   @NotNull
   Map<String, Double> parseBuffer(String buffer, List<String> additionalLanguageCodes) {
-    String[] values = buffer.trim().split("\\s+");
+    String[] values = WHITESPACE.split(buffer.trim());
     if (!buffer.startsWith("__label__")) {
       throw new FastTextException("FastText output is expected to start with '__label__': ''" + buffer + "'", true);
     }
@@ -121,6 +132,21 @@ public class FastTextDetector {
       }
     }
     return probabilities;
+  }
+
+  public synchronized boolean restartProcess() throws IOException {
+    try {
+      runFasttext("This is a test text that should work.", Collections.emptyList());
+    } catch (IOException | FastTextException e) {
+      if (fasttextProcess != null && fasttextIn != null && fasttextOut != null) {
+        this.fasttextProcess.destroy();
+        this.fasttextIn.close();
+        this.fasttextOut.close();
+      }
+      init();
+      return true;
+    }
+    return false;
   }
 
   void destroy() {

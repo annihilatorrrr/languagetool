@@ -18,7 +18,9 @@
  */
 package org.languagetool.rules.ca;
 
+import org.apache.commons.lang3.StringUtils;
 import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.Language;
 import org.languagetool.Tag;
 import org.languagetool.language.Catalan;
 import org.languagetool.rules.AbstractRepeatedWordsRule;
@@ -50,9 +52,9 @@ private final Supplier<List<DisambiguationPatternRule>> antiPatterns;
     return antiPatterns.get();
   }
 
-  public CatalanRepeatedWordsRule(ResourceBundle messages) {
-    super(messages, new Catalan());
-    antiPatterns = cacheAntiPatterns(new Catalan(), ANTI_PATTERNS);
+  public CatalanRepeatedWordsRule(ResourceBundle messages, Language lang) {
+    super(messages, lang);
+    antiPatterns = cacheAntiPatterns(lang, ANTI_PATTERNS);
     super.setTags(Arrays.asList(Tag.picky));
     // super.setDefaultTempOff();
   }
@@ -81,29 +83,29 @@ private final Supplier<List<DisambiguationPatternRule>> antiPatterns;
 
   @Override
   protected Synthesizer getSynthesizer() {
-    return CatalanSynthesizer.INSTANCE;
+    return language.getSynthesizer();
   }
 
   @Override
   protected String adjustPostag(String postag) {
     if (postag.contains("CN")) {
-      return postag.replaceFirst("CN", "..");
+      return StringUtils.replaceOnce(postag,"CN", "..");
     } else if (postag.contains("MS")) {
-      return postag.replaceFirst("MS", "[MC][SN]");
+      return StringUtils.replaceOnce(postag,"MS", "[MC][SN]");
     } else if (postag.contains("FS")) {
-      return postag.replaceFirst("FS", "[FC][SN]");
+      return StringUtils.replaceOnce(postag,"FS", "[FC][SN]");
     } else if (postag.contains("MP")) {
-      return postag.replaceFirst("MP", "[MC][PN]");
+      return StringUtils.replaceOnce(postag,"MP", "[MC][PN]");
     } else if (postag.contains("FP")) {
-      return postag.replaceFirst("FP", "[FC][PN]");
+      return StringUtils.replaceOnce(postag,"FP", "[FC][PN]");
     } else if (postag.contains("CS")) {
-      return postag.replaceFirst("CS", "[MFC][SN]"); // also F ?
+      return StringUtils.replaceOnce(postag,"CS", "[MFC][SN]"); // also F ?
     } else if (postag.contains("CP")) {
-      return postag.replaceFirst("CP", "[MFC][PN]"); // also F ?
+      return StringUtils.replaceOnce(postag,"CP", "[MFC][PN]"); // also F ?
     } else if (postag.contains("MN")) {
-      return postag.replaceFirst("MN", "[MC][SPN]");
+      return StringUtils.replaceOnce(postag,"MN", "[MC][SPN]");
     } else if (postag.contains("FN")) {
-      return postag.replaceFirst("FN", "[FC][SPN]");
+      return StringUtils.replaceOnce(postag,"FN", "[FC][SPN]");
     }
     return postag;
   }
@@ -114,7 +116,7 @@ private final Supplier<List<DisambiguationPatternRule>> antiPatterns;
     if (isAllUppercase || (isCapitalized && !sentStart)) {
       return true;
     }
-    if (tokens[i].hasPosTagStartingWith("NP")) {
+    if (tokens[i].hasPosTagStartingWith("NP") || tokens[i].hasPosTag("_english_ignore_")) {
       return true;
     }
     return false;

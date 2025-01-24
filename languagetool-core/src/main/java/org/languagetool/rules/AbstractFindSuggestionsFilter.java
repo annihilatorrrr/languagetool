@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.languagetool.AnalyzedToken;
 import org.languagetool.AnalyzedTokenReadings;
@@ -45,9 +46,9 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
 
   @Override
   public RuleMatch acceptRuleMatch(RuleMatch match, Map<String, String> arguments, int patternTokenPos,
-      AnalyzedTokenReadings[] patternTokens) throws IOException {
-    
-//    if (match.getSentence().getText().contains("La primera compren")) {
+                                   AnalyzedTokenReadings[] patternTokens, List<Integer> tokenPositions) throws IOException {
+
+//    if (match.getSentence().getText().contains("Toni Comin")) {
 //      int ii=0;
 //      ii++;
 //    }
@@ -60,12 +61,8 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
     String desiredPostag = getRequired("desiredPostag", arguments);
     String priorityPostag = getOptional("priorityPostag", arguments);
     String removeSuggestionsRegexp = getOptional("removeSuggestionsRegexp", arguments);
-    // supress match if there are no suggestions
-    String suppressMatch = getOptional("suppressMatch", arguments);
-    boolean bSuppressMatch = false;
-    if (suppressMatch != null && suppressMatch.equalsIgnoreCase("true")) {
-      bSuppressMatch = true;
-    }
+    // suppress match if there are no suggestions
+    boolean bSuppressMatch = getOptional("suppressMatch", arguments, "false").equalsIgnoreCase("true");
     
     // diacriticsMode: return only changes in diacritics. If there is none, the
     // match is removed.
@@ -78,21 +75,14 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
     StringComparator stringComparator = new StringComparator("");
 
     if (wordFrom != null && desiredPostag != null) {
-      int posWord = 0;
-      if (wordFrom.equals("marker")) {
-        while (posWord < patternTokens.length && (patternTokens[posWord].getStartPos() < match.getFromPos()
-            || patternTokens[posWord].isSentenceStart())) {
-          posWord++;
-        }
-        posWord++;
+      AnalyzedTokenReadings atrWord;
+      if (wordFrom.equals("inmarker")) {
+        match.setOriginalErrorStr();
+        atrWord = new AnalyzedTokenReadings(new AnalyzedToken(preProcessWrongWord(match.getOriginalErrorStr()),
+          "", ""));
       } else {
-        posWord = Integer.parseInt(wordFrom);
+        atrWord = patternTokens[getPosition(wordFrom, patternTokens, match)];
       }
-      if (posWord < 1 || posWord > patternTokens.length) {
-        throw new IllegalArgumentException("FindSuggestionsFilter: Index out of bounds in "
-            + match.getRule().getFullId() + ", wordFrom: " + posWord);
-      }
-      AnalyzedTokenReadings atrWord = patternTokens[posWord - 1];
       stringComparator = new StringComparator(atrWord.getToken());
       boolean isWordCapitalized = StringTools.isCapitalizedWord(atrWord.getToken());
       boolean isWordAllupper = StringTools.isAllUppercase(atrWord.getToken());
@@ -113,6 +103,7 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
           regexpPattern = Pattern.compile(removeSuggestionsRegexp, Pattern.UNICODE_CASE);
         }
         List<String> suggestions = getSpellingSuggestions(atrWord);
+        int usedPriorityPostagPos = 0;
         if (suggestions.size() > 0) {
           for (String suggestion : suggestions) {
             // TODO: do not tag capitalized words with tags for lower case
@@ -139,7 +130,8 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
                       replacement = StringTools.uppercaseFirstChar(replacement);
                     }
                     if (priorityPostag!= null && analyzedSuggestion.matchesPosTagRegex(priorityPostag)) {
-                      replacements.add(0, replacement);
+                      replacements.add(usedPriorityPostagPos, replacement);
+                      usedPriorityPostagPos++;
                       used = true;
                     } else {
                       replacements.add(replacement);
@@ -178,11 +170,12 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
         }
       }
     }
-
-    if (diacriticsMode && replacements.size() == 0) {
+    boolean matchContainsSomeFinishedSuggestion =
+      match.getSuggestedReplacements().stream().anyMatch(k -> !k.toLowerCase().contains("{suggestion}"));
+    if (diacriticsMode && replacements.size() == 0 && !matchContainsSomeFinishedSuggestion) {
       return null;
     }
-    if (replacements.size() + replacements2.size() == 0 && bSuppressMatch) {
+    if (replacements.size() + replacements2.size() == 0 && bSuppressMatch && !matchContainsSomeFinishedSuggestion) {
       return null;
     }
     String message = match.getMessage();
@@ -194,7 +187,7 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
     boolean replacementsUsed = false;
     if (generateSuggestions) {
       for (String s : match.getSuggestedReplacements()) {
-        if (s.contains("{suggestion}") || s.contains("{Suggestion}")) {
+        if (s.contains("{suggestion}") || s.contains("{Suggestion}") || s.contains("{SUGGESTION}")) {
           replacementsUsed = true;
           for (String s2 : replacements) {
             if (definitiveReplacements.size() >= MAX_SUGGESTIONS) {
@@ -204,9 +197,13 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
               if (!definitiveReplacements.contains(s2)) {
                 definitiveReplacements.add(s.replace("{suggestion}", s2));
               }
-            } else {
+            } else if (s.contains("{Suggestion}")) {
               if (!definitiveReplacements.contains(StringTools.uppercaseFirstChar(s2))) {
                 definitiveReplacements.add(s.replace("{Suggestion}", StringTools.uppercaseFirstChar(s2)));
+              }
+            } else {
+              if (!definitiveReplacements.contains(s2.toUpperCase())) {
+                definitiveReplacements.add(s.replace("{SUGGESTION}", s2.toUpperCase()));
               }
             }
           }
@@ -235,9 +232,9 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
         }
       }
     }
-
+    definitiveReplacements.remove(match.getOriginalErrorStr());
     if (!definitiveReplacements.isEmpty()) {
-      ruleMatch.setSuggestedReplacements(definitiveReplacements);
+      ruleMatch.setSuggestedReplacements(definitiveReplacements.stream().distinct().collect(Collectors.toList()));
     }
     return ruleMatch;
   }
@@ -278,6 +275,10 @@ public abstract class AbstractFindSuggestionsFilter extends RuleFilter {
       }
       return d1 - d2;
     }
+  }
+
+  protected String preProcessWrongWord (String word) {
+    return word.replace(" ","");
   }
 
 }

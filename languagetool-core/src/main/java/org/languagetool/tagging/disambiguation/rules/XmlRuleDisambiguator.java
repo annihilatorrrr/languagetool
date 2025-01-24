@@ -29,6 +29,7 @@ import org.languagetool.tagging.disambiguation.AbstractDisambiguator;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -55,14 +56,14 @@ public class XmlRuleDisambiguator extends AbstractDisambiguator {
     String disambiguationFile = language.getShortCode() + "/" + DISAMBIGUATION_FILE;
     List<DisambiguationPatternRule> disambiguationRulesList;
     try {
-      disambiguationRulesList = loadPatternRules(disambiguationFile);
+      disambiguationRulesList = loadPatternRules(disambiguationFile, language);
     } catch (Exception e) {
       throw new RuntimeException("Problems with loading disambiguation file: " + disambiguationFile, e);
     }
     if (useGlobalDisambiguation) {
       // disambiguation-global.xml
       try {
-        disambiguationRulesList.addAll(loadPatternRules(GLOBAL_DISAMBIGUATION_FILE));
+        disambiguationRulesList.addAll(loadPatternRules(GLOBAL_DISAMBIGUATION_FILE, language));
       } catch (Exception e) {
         throw new RuntimeException("Problems with loading global disambiguation file: " + GLOBAL_DISAMBIGUATION_FILE, e);
       }
@@ -93,10 +94,10 @@ public class XmlRuleDisambiguator extends AbstractDisambiguator {
    * 
    * @return a List of {@link DisambiguationPatternRule} objects
    */
-  protected List<DisambiguationPatternRule> loadPatternRules(String filename)
+  protected List<DisambiguationPatternRule> loadPatternRules(String filename, Language language)
       throws ParserConfigurationException, SAXException, IOException {
     DisambiguationRuleLoader ruleLoader = new DisambiguationRuleLoader();
-    return ruleLoader.getRules(JLanguageTool.getDataBroker().getFromResourceDirAsStream(filename));
+    return ruleLoader.getRules(JLanguageTool.getDataBroker().getFromResourceDirAsStream(filename), language, filename);
   }
 
 }

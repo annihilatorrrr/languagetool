@@ -21,6 +21,7 @@ package org.languagetool.dev;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -39,7 +40,7 @@ public class XmlIndenter {
       System.out.println("Usage: " + XmlIndenter.class.getSimpleName() + " <xmlFile>");
       System.exit(1);
     }
-    List<String> lines = Files.readAllLines(Paths.get(args[0]));
+    List<String> lines = Files.readAllLines(Paths.get(args[0]), StandardCharsets.UTF_8);
     boolean inCategory = false;
     boolean inRuleGroup = false;
     boolean inRule = false;
@@ -81,7 +82,7 @@ public class XmlIndenter {
       if (line.startsWith("<rulegroup")) { inRuleGroup = true; }
       if (line.startsWith("<rule ") || line.startsWith("<rule>")) { inRule = true; }
       if (line.startsWith("<pattern")) { inPattern = true; }
-      if (line.startsWith("<antipattern")) { inAntiPattern = true; }
+      if (line.startsWith("<antipattern") && !line.contains("</antipattern")) { inAntiPattern = true; }
       if (line.contains("<marker>") && !line.contains("</marker>") && (inPattern || inAntiPattern)) { inMarker = true; }
       if (line.contains("<and>")) { inAnd = true; }
       if (line.contains("<unify>") || line.contains("<unify ")) { inUnify = true; }

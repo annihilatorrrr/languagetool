@@ -132,6 +132,8 @@ public class SentenceSourceChecker {
             .desc("URL of a named entity recognition service").build());
     options.addOption(Option.builder().longOpt("skip-exceptions")
             .desc("Whether internal Java exceptions should only be printed instead of stopping this script").build());
+    options.addOption(Option.builder().longOpt("print-correct")
+            .desc("Print sentences in which no error is found").build());
     options.addOption(Option.builder("v").longOpt("verbose")
             .desc("More verbose output on STDOUT, like the line number of the rule in the grammar.xml").build());
     try {
@@ -163,9 +165,13 @@ public class SentenceSourceChecker {
     Language lang = Languages.getLanguageForShortCode(langCode);
     Language motherTongue = motherTongueCode != null ? Languages.getLanguageForShortCode(motherTongueCode) : null;
     GlobalConfig globalConfig = new GlobalConfig();
+    System.out.println("Premium: " + Premium.isPremiumVersion());
     if (options.hasOption("nerUrl")) {
       System.out.println("Using NER service: " + options.getOptionValue("nerUrl"));
       globalConfig.setNERUrl(options.getOptionValue("nerUrl"));
+    }
+    if (options.hasOption("print-correct")) {
+      System.out.println("In print-correct mode, will only print sentences for which no error is found.");
     }
     MultiThreadedJLanguageTool lt = new MultiThreadedJLanguageTool(lang, motherTongue, -1, globalConfig, null);
     lt.setCleanOverlappingMatches(false);
@@ -250,14 +256,20 @@ public class SentenceSourceChecker {
         }
         try {
           AnnotatedText annotatedText = new AnnotatedTextBuilder().addText(sentence.getText()).build();
-          List<RuleMatch> matches = lt.check(annotatedText, true, JLanguageTool.ParagraphHandling.NORMAL, null,
-            JLanguageTool.Mode.ALL, JLanguageTool.Level.PICKY);
-          resultHandler.handleResult(sentence, matches, lang);
+          CheckResults matches = lt.check2(annotatedText, true, JLanguageTool.ParagraphHandling.NORMAL, null,
+            JLanguageTool.Mode.ALL, JLanguageTool.Level.PICKY, new HashSet<>(Arrays.asList(ToneTag.values())), null);
+          if (options.hasOption("print-correct")) {
+            if (matches.getRuleMatches().size() == 0) {
+              System.out.println(sentence.getText());
+            }
+          } else {
+            resultHandler.handleResult(sentence, matches.getRuleMatches(), lang);
+          }
           sentenceCount++;
           if (sentenceCount % 5000 == 0) {
             System.err.printf("%s sentences checked...\n", NumberFormat.getNumberInstance(Locale.US).format(sentenceCount));
           }
-          ruleMatchCount += matches.size();
+          ruleMatchCount += matches.getRuleMatches().size();
         } catch (DocumentLimitReachedException | ErrorLimitReachedException e) {
           throw e;
         } catch (Exception e) {

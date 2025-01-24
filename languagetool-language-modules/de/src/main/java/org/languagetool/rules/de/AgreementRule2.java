@@ -113,6 +113,7 @@ public class AgreementRule2 extends Rule {
     asList(token("richtig")),    // "Richtig Kaffee kochen ..."
     asList(token("weiß")),       // "Weiß Papa, dass ..."
     asList(token("speziell")),   // "Speziell Flugfähigkeit hat sich unabhängig voneinander ..."
+    asList(token("proaktiv")),   // "Speziell Flugfähigkeit hat sich unabhängig voneinander ..."
     asList(token("halb")),       // "Halb Traum, halb Wirklichkeit"
     asList(token("hinter")),     // "Hinter Bäumen"
     asList(token("vermutlich")), // "Vermutlich Ende 1813 erkrankte..."
@@ -154,7 +155,7 @@ public class AgreementRule2 extends Rule {
   private final Supplier<List<DisambiguationPatternRule>> antiPatterns;
 
   public AgreementRule2(ResourceBundle messages, Language language) {
-    super.setCategory(Categories.GRAMMAR.getCategory(messages));
+    setCategory(Categories.GRAMMAR.getCategory(messages));
     addExamplePair(Example.wrong("<marker>Kleiner Haus</marker> am Waldrand"),
                    Example.fixed("<marker>Kleines Haus</marker> am Waldrand"));
     antiPatterns = cacheAntiPatterns(language, ANTI_PATTERNS);

@@ -18,12 +18,11 @@
  */
 package org.languagetool.rules.pt;
 
+import org.languagetool.AnalyzedSentence;
 import org.languagetool.AnalyzedTokenReadings;
+import org.languagetool.Language;
 import org.languagetool.language.Portuguese;
-import org.languagetool.rules.AbstractSimpleReplaceRule2;
-import org.languagetool.rules.Categories;
-import org.languagetool.rules.Example;
-import org.languagetool.rules.ITSIssueType;
+import org.languagetool.rules.*;
 import org.languagetool.tools.Tools;
 
 import java.util.*;
@@ -51,10 +50,10 @@ public class PortugueseBarbarismsRule extends AbstractSimpleReplaceRule2 {
     return Collections.singletonList(path);
   }
 
-  public PortugueseBarbarismsRule(ResourceBundle messages, String path) {
-    super(messages, new Portuguese());
+  public PortugueseBarbarismsRule(ResourceBundle messages, String path, Language language) {
+    super(messages, language);
     this.path = Objects.requireNonNull(path);
-    super.setCategory(Categories.STYLE.getCategory(messages));
+    setCategory(Categories.STYLE.getCategory(messages));
     setLocQualityIssueType(ITSIssueType.LocaleViolation);
     useSubRuleSpecificIds();
     addExamplePair(Example.wrong("<marker>curriculum vitae</marker>"),
@@ -68,7 +67,7 @@ public class PortugueseBarbarismsRule extends AbstractSimpleReplaceRule2 {
 
   @Override
   public String getDescription() {
-    return "Palavras de origem estrangeira evitáveis";
+    return "Palavras de origem estrangeira evitáveis: $match";
   }
 
   @Override
@@ -78,7 +77,7 @@ public class PortugueseBarbarismsRule extends AbstractSimpleReplaceRule2 {
 
   @Override
   public String getMessage() {
-    return "'$match' é um estrangeirismo. É preferível dizer $suggestions.";
+    return "\"$match\" é um estrangeirismo. É preferível dizer $suggestions.";
   }
 
   @Override
@@ -99,7 +98,6 @@ public class PortugueseBarbarismsRule extends AbstractSimpleReplaceRule2 {
   @Override
   protected boolean isTokenException(AnalyzedTokenReadings atr) {
     // proper nouns tagged in multiwords are exceptions
-    return atr.hasPosTagStartingWith("NP") || atr.isImmunized();
+    return atr.isImmunized() || atr.hasPosTagStartingWith("NP") || atr.hasPosTagStartingWith("_english_ignore_");
   }
-
 }

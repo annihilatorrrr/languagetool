@@ -26,7 +26,9 @@ import com.optimaize.langdetect.profiles.LanguageProfileReader;
 import com.optimaize.langdetect.text.RemoveMinorityScriptsTextFilter;
 import com.optimaize.langdetect.text.TextObjectFactory;
 import com.optimaize.langdetect.text.TextObjectFactoryBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 import org.languagetool.DetectedLanguage;
 import org.languagetool.JLanguageTool;
 import org.languagetool.Language;
@@ -41,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Identify the language of a text. Note that some languages might never be
@@ -64,7 +67,7 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
   private static final List<String> ignoreLangCodes = Arrays.asList("ast", "gl");
 
   // languages that we offer profiles for as they are not yet supported by language-detector:
-  private static final List<String> externalLangCodes = Arrays.asList("eo");
+  private static final List<String> externalLangCodes = Arrays.asList("eo", "crh");
   // fall back to checking against list of common words if fasttext probability is lower than this:
   private static final float FASTTEXT_CONFIDENCE_THRESHOLD = 0.85f;
   // Result ('Avg. minimum chars') of LanguageDetectionMinLengthEval with MIN_INPUT_LEN=5 and MAX_INPUT_LEN=100,
@@ -77,6 +80,7 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
 
   private final LanguageDetector languageDetector;
   private final TextObjectFactory textObjectFactory;
+  private final AtomicInteger fasttextInitCounter = new AtomicInteger(0);
 
   private FastTextDetector fastTextDetector;
   private NGramDetector ngram;
@@ -119,11 +123,31 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
     if (fasttextBinary != null && fasttextModel != null) {
       try {
         fastTextDetector = new FastTextDetector(fasttextModel, fasttextBinary);
-        logger.info("Started fasttext process for language identification: Binary " + fasttextBinary + " with model @ " + fasttextModel);
+        logger.info("Started fastText process for language identification: Binary {} with model @ {}", fasttextBinary, fasttextModel);
       } catch (IOException e) {
         throw new RuntimeException("Could not start fasttext process for language identification @ " + fasttextBinary + " with model @ " + fasttextModel, e);
       }
+    } else {
+      logger.warn("fastText not configured - language detection performance will be degraded. " +
+        "See https://dev.languagetool.org/http-server#starting-from-command-line for instructions.");
     }
+  }
+
+  /**
+   * For test only
+   */
+  @TestOnly
+  public void setFastTextDetector(FastTextDetector fastTextDetector) {
+    this.fastTextDetector = fastTextDetector;
+  }
+
+  /**
+   * For test only
+   * @return a counter how often fasttext was already recreated after a failure
+   */
+  @TestOnly
+  public AtomicInteger getFasttextInitCounter() {
+    return fasttextInitCounter;
   }
 
   /**
@@ -202,21 +226,32 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
    */
   @Override
   public DetectedLanguage detectLanguage(String cleanText, List<String> noopLangsTmp, List<String> preferredLangsTmp) {
+    return this.detectLanguage(cleanText, noopLangsTmp, preferredLangsTmp, false);
+  }
 
+  @Nullable
+  @Override
+  public DetectedLanguage detectLanguage(String cleanText, List<String> noopLangsTmp, List<String> preferredLangsTmp, boolean limitOnPreferredLangs) {
+    List<DetectedLanguage> detectedLanguageScores = getDetectedLanguageScores(cleanText, noopLangsTmp, preferredLangsTmp, limitOnPreferredLangs, 1);
+    return detectedLanguageScores.stream().findFirst().orElse(null);
+  }
+
+  @NotNull
+  @Override
+  public List<DetectedLanguage> getDetectedLanguageScores(String cleanText, List<String> noopLangsTmp, List<String> preferredLangsTmp, boolean limitOnPreferredLangs, int count) {
     String text = cleanText;
     ParsedLanguageLists parsedLanguageLists = prepareDetectLanguage(text, noopLangsTmp, preferredLangsTmp);
     if (parsedLanguageLists == null) {
-      return new DetectedLanguage(null, new NoopLanguage());
+      return Collections.singletonList(new DetectedLanguage(null, new NoopLanguage()));
     }
     List<String> additionalLangs = parsedLanguageLists.getAdditionalLangs();
     List<String> preferredLangs = parsedLanguageLists.getPreferredLangs();
 
-    Map.Entry<String, Double> result = null;
+    Map<String, Double> scores = null;
     boolean fasttextFailed = false;
     String source = "";
     if (fastTextDetector != null || ngram != null) {
       try {
-        Map<String, Double> scores;
         boolean usingFastText = false;
         if ((text.length() <= SHORT_ALGO_THRESHOLD || fastTextDetector == null) && ngram != null) {
           scores = ngram.detectLanguages(text.trim(), additionalLangs);
@@ -226,13 +261,13 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
           scores = fastTextDetector.runFasttext(text, additionalLangs);
           source += "fasttext";
         }
-        result = getHighestScoringResult(scores);
         /*if (result.getValue().floatValue() < THRESHOLD) {
           System.out.println("FastText below threshold: " + result.getValue().floatValue() + " for " + cleanText.length() + " chars");
         } else {
           System.out.println("FastText above threshold: " + result.getValue().floatValue() + " for " + cleanText.length() + " chars");
         }*/
-        if ((usingFastText && result.getValue().floatValue() < FASTTEXT_CONFIDENCE_THRESHOLD) || result.getKey().equals("zz")) {
+        Map.Entry<String, Double> fasttextHighestScoringResult = getHighestScoringResult(scores);
+        if ((usingFastText && fasttextHighestScoringResult.getValue().floatValue() < FASTTEXT_CONFIDENCE_THRESHOLD) || fasttextHighestScoringResult.getKey().equals("zz")) {
           //System.out.println(cleanText + " ->" + result.getValue().floatValue() + " " + result.getKey());
           Map<Language, Integer> lang2Count = COMMON_WORDS_LANG_IDENTIFIER.getKnownWordsPerLanguage(text);
           Set<String> baseLangAlreadyHandled = new HashSet<>();
@@ -251,67 +286,107 @@ public class DefaultLanguageIdentifier extends LanguageIdentifier {
             }
           }
           source += "+commonwords";
-          result = getHighestScoringResult(scores);
         }
         if (preferredLangs.contains("no") && !preferredLangs.contains("da")) {
           // Special case, as Norwegian easily gets detected as Danish (https://github.com/languagetool-org/languagetool/issues/5520).
           scores.keySet().removeIf(k -> k.equals("da"));
-          result = getHighestScoringResult(scores);
         }
-        if (text.length() <= CONSIDER_ONLY_PREFERRED_THRESHOLD && preferredLangs.size() > 0) {
-          //System.out.println("remove? " + preferredLangs + " <-> " + scores);
-          scores.keySet().removeIf(k -> !preferredLangs.contains(k));
-          //System.out.println("-> " + b + " ==> " + scores);
-          result = getHighestScoringResult(scores);
-          source += "+prefLang";
+        if (!preferredLangs.isEmpty() && (text.length() <= CONSIDER_ONLY_PREFERRED_THRESHOLD || limitOnPreferredLangs)) {
+          boolean wasRemoved = scores.keySet().removeIf(k -> !preferredLangs.contains(k));
+          if (wasRemoved && scores.isEmpty() && limitOnPreferredLangs) {
+            //TODO: just to see how often we would return no results because of that parameter -> remove later
+            logger.warn("No language detected for text after remove all not preferred languages from score.");
+          }
+          source += "+prefLang(forced: " + limitOnPreferredLangs + ")";
         }
-        // Calculate a trivial confidence value because fasttext's confidence is often
-        // wrong for short cleanText (e.g. 0.99 for a test that's misclassified). Don't
-        // use 1.0 because we can never be totally sure...
-        double newScore = 0.99 / (30.0 / Math.min(text.length(), 30));
-        //System.out.println("fasttext  : " + result);
-        //System.out.println("newScore  : " + newScore);
-        result = new AbstractMap.SimpleImmutableEntry<>(result.getKey(), newScore);
       } catch (FastTextDetector.FastTextException e) {
         if (e.isDisabled()) {
-          fastTextDetector = null;
-          logger.error("Fasttext disabled", e);
+          fasttextFailed = true;
+          reinitFasttextAfterFailure(e);
         } else {
           logger.error("Fasttext failed, fallback used", e);
           fasttextFailed = true;
         }
       } catch (Exception e) {
-        //fastText.destroy();
-        fastTextDetector = null;
-        logger.error("Fasttext disabled", e);
+        fasttextFailed = true;
+        reinitFasttextAfterFailure(e);
       }
     }
     if (fastTextDetector == null && ngram == null || fasttextFailed) { // no else, value can change in if clause
       text = textObjectFactory.forText(text).toString();
-      result = detectLanguageCode(text);
-      if (additionalLangs.size() > 0) {
-        logger.warn("Cannot consider noopLanguages because not in fastText mode: " + additionalLangs);
+      source +="+fallback";
+      if (scores == null) {
+        scores = new HashMap<>();
+      }
+      Map.Entry<String, Double> localResult = detectLanguageCode(text, preferredLangs, limitOnPreferredLangs);
+      if (localResult != null) {
+        scores.put(localResult.getKey(), localResult.getValue());
+      }
+      if (!additionalLangs.isEmpty()) {
+        logger.warn("Cannot consider noopLanguages because not in fastText mode: {}", additionalLangs);
       }
     }
-    if (result != null && result.getKey() != null && LanguageIdentifierService.INSTANCE.canLanguageBeDetected(result.getKey(), additionalLangs)) {
-      return new DetectedLanguage(null,
-              Languages.getLanguageForShortCode(result.getKey(), additionalLangs),
-              result.getValue().floatValue(), source);
-    } else {
-      if (preferredLangs.size() > 0 && Languages.isLanguageSupported(preferredLangs.get(0))) {
-        source += "+fallbackToPrefLang";
-        return new DetectedLanguage(null, Languages.getLanguageForShortCode(preferredLangs.get(0)), 0.1f, source);
+
+    List<DetectedLanguage> detectedLanguages = new LinkedList<>();
+    if (count > 1) {
+      Map<String, Double> orderedScores = getOrderedScores(scores, count);
+      for (Map.Entry<String, Double> entry : orderedScores.entrySet()) {
+        if (entry.getKey() != null && LanguageIdentifierService.INSTANCE.canLanguageBeDetected(entry.getKey(), additionalLangs)) {
+          float rate = Math.round(entry.getValue() * 100.0) / 100.0f; // Convert to a non-scientific float and potentially round down
+          detectedLanguages.add(new DetectedLanguage(null, Languages.getLanguageForShortCode(entry.getKey(), additionalLangs), rate, source));
+        }
       }
-      return null;
+    } else {
+      Map.Entry<String, Double> highestScoringResult = getHighestScoringResult(scores);
+      if (highestScoringResult.getKey() != null && LanguageIdentifierService.INSTANCE.canLanguageBeDetected(highestScoringResult.getKey(), additionalLangs)) {
+        float newScore;
+        if (source.contains("fasttext")) {
+          // Calculate a trivial confidence value because fasttext's confidence is often
+          // wrong for short cleanText (e.g. 0.99 for a test that's misclassified). Don't
+          // use 1.0 because we can never be totally sure...
+          newScore = (float) (0.99/ (30.0 / Math.min(text.length(), 30)));
+        } else {
+          newScore = highestScoringResult.getValue().floatValue();
+        }
+        detectedLanguages.add(new DetectedLanguage(null, Languages.getLanguageForShortCode(highestScoringResult.getKey(), additionalLangs), newScore, source));
+      }
+    }
+    if (detectedLanguages.isEmpty() && !preferredLangs.isEmpty() &&
+      preferredLangs.get(0) != null &&
+      !preferredLangs.get(0).trim().isEmpty() &&
+      Languages.isLanguageSupported(preferredLangs.get(0))) {
+      source += "+fallbackToPrefLang";
+      detectedLanguages.add(new DetectedLanguage(null, Languages.getLanguageForShortCode(preferredLangs.get(0)), 0.1f, source));
+    }
+    return detectedLanguages;
+  }
+
+  private void reinitFasttextAfterFailure(Exception e) {
+    if (fastTextDetector != null) {
+      int newCounter = fasttextInitCounter.incrementAndGet();
+        try {
+          boolean wasRestarted = fastTextDetector.restartProcess();
+          if (wasRestarted) {
+            logger.debug("Fasttext was new initialized after failure {}", newCounter);
+          } else {
+            fasttextInitCounter.decrementAndGet();
+          }
+        } catch (IOException ex) {
+          logger.warn("Restarting fasttext failed {}", newCounter);
+        }
     }
   }
 
-  /**
-   * @return language or {@code null} if language could not be identified
-   */
   @Nullable
-  private Map.Entry<String, Double> detectLanguageCode(String text) {
+  private Map.Entry<String, Double> detectLanguageCode(String text, List<String> preferredLangs, boolean limitOnPreferredLangs) {
     List<com.optimaize.langdetect.DetectedLanguage> lang = languageDetector.getProbabilities(text);
+    if (limitOnPreferredLangs && preferredLangs != null && !preferredLangs.isEmpty()) {
+      boolean wasRemoved = lang.removeIf(l -> !preferredLangs.contains(l.getLocale().getLanguage()));
+      if (wasRemoved && lang.isEmpty()) {
+        //TODO: just to see how often we would return no results because of that parameter -> remove later
+        logger.warn("No language detected for text after remove all not preferred languages from score.");
+      }
+    }
     // comment in for debugging:
     //System.out.println(languageDetector.getProbabilities(textObject));
     if (lang.size() > 0) {
