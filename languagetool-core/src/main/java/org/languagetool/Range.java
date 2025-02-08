@@ -30,6 +30,7 @@ public class Range {
   private final int toPos;
   private final String lang;
 
+
   Range(int fromPos, int toPos, String lang) {
     this.fromPos = fromPos;
     this.toPos = toPos;

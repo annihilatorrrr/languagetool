@@ -35,8 +35,6 @@
 (?i)enform.+	(?i)inform.+	enf	inf	(?i)chapéus|fôrmas?|moldes?|sapatos?	(?i)avisos?|cartas?|correios?|direc?tivas?|telefon.+|contac?at.+	meter em fôrma	avisar
 # enfestar/infestar
 (?i)enfest.+	(?i)infest.+	enf	inf	(?i)(calça|camisa|toalha|camisola|roupa|tabuleiro|guardanapo|lenço)s?|lenç(ol|ois)	(?i)(barata|fungo|parasita|daninha|larva|rato|insec?to)s?	dobrar ao meio	assolar
-# entender/intender
-(?i)entend.+	(?i)intend.+	ent	int	(?i)(argumentaç|liç|raz)(ão|ões)|(anúncio|argumento|cartaz|conhecimento|discurso|filosofia|ideia|ideologia|lição|matéria|memorando|notícia|disciplina)s?	(?i)responsáv(el|eis)|chef(ia|)es?|(polícia|patrulha|guarda|segurança)s?	compreender	exercer vigilância
 # estrato/extrato
 (?i)estratos?	(?i)extratos?	strat	xtrat	(?i)nuve(m|ns)|geologia|meteorologia|(céu|cirr[ou]|geológico|solo)s?	(?i)(bancário|chá.+|multibanco|contabilidade|[Ff]inanças|saldo|dívida|hipoteca|renda|rendimento|guaco|xarope)s?|amortizaç(ão|ões)	camada	resumo ou extração
 # infligir/infringir - converted from Catalan file
@@ -46,7 +44,7 @@
 # massagem/mensagem
 massage.+	mensage.+	mass	mens	(?i)tailandesa|relax.*|n(?:ú|ua)s|terapeut(?:a|ic[ao])s?|próstata|erótica|tântrica|limfática	erros?|envi.+|receb.+|important.+|escrev.+|escrita.+	técnica de relaxamento físico	comunicação, ou o que é comunicado
 # paço/passo
-(?-i)paços?	[Pp]assos?	aço	asso	(?-i)(Arcos|Brandão|Ducal|Ribeira|Vilharigues|Concelho|São|Lanhenses|Raxoi|Lamirás|Escolas|Ferreira|D|[Ee]piscopal|[Ii]mperial|[Mm]unicipal|[Pp]alácio|[Rr]eal|[Dd]uque(sa)?|[Rr]ei)s?|cultura(l|is)	(?-i)(pé|and.+|caminh.+|curto|largo|rápido|lento|carreira|apert.+|dança|próximo|importante|dois)s?|atrás	tipo de palácio real ou episcocal	movimento dos pés a andar; verbo passar
+(?-i)paços?	[Pp]assos?	aço	asso	(?-i)(Arcos|Brandão|Ducal|Ribeira|Vilharigues|Concelho|Lanhenses|Raxoi|Lamirás|Escolas|Ferreira|D|[Ee]piscopal|[Ii]mperial|[Mm]unicipal|[Pp]alácio|[Dd]uque(sa)?|[Rr]ei)s?	(?-i)(pé|and.+|caminh.+|curto|largo|rápido|lento|carreira|apert.+|dança|próximo|importante|dois)s?|atrás	tipo de palácio real ou episcocal	movimento dos pés a andar; verbo passar
 # pás/paz
 (?i)pás	paz	ás	az	(?i)(cova|coveiro|buraco|terra)s?	(?i)(alma|descan[çs].+|céu|guerra)s?	plural de pá	estado de calma
 # peão/pião

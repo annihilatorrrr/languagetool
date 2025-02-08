@@ -10,12 +10,15 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.languagetool.AnalyzedSentence;
 import org.languagetool.AnalyzedToken;
 import org.languagetool.AnalyzedTokenReadings;
 import org.languagetool.JLanguageTool;
 
 class SimpleDisambiguator {
+
+  private static final Pattern PATTERN = Pattern.compile(".*-(то|от|таки|бо|но)");
 
   final Map<String, TokenMatcher> DISAMBIG_REMOVE_MAP = loadMap("/uk/disambig_remove.txt");
   final Map<String, List<String>> DISAMBIG_DUPS_MAP = loadMapDups("/uk/disambig_dups.txt");
@@ -68,8 +71,8 @@ class SimpleDisambiguator {
     for (int i = 1; i < tokens.length; i++) {
 
       String token = tokens[i].getCleanToken();
-//      if( token == null )
-//        continue;
+      if( StringUtils.isEmpty(token) )
+        continue;
 
       if( Character.isLowerCase(token.charAt(0)) ) {
         token = token.toLowerCase();
@@ -82,7 +85,7 @@ class SimpleDisambiguator {
 
         if( tokenMatcher == null ) {
           int idx = token.lastIndexOf('-');
-          if( idx > 0 && token.matches(".*-(то|от|таки|бо|но)") ) {
+          if( idx > 0 && PATTERN.matcher(token).matches()) {
             String mainToken = token.substring(0, idx);
             tokenMatcher = DISAMBIG_REMOVE_MAP.get(mainToken);
           }

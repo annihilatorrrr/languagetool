@@ -20,6 +20,10 @@ package org.languagetool.tokenizers.ru;
 
 import org.languagetool.tokenizers.WordTokenizer;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+
 /**
  * @since 6.1
  */
@@ -27,6 +31,36 @@ public class RussianWordTokenizer extends WordTokenizer {
 
   @Override
   public String getTokenizingCharacters() {
-    return super.getTokenizingCharacters() + "'";
+    return super.getTokenizingCharacters() + "'.";
   }
+  
+  @Override
+  public List<String> tokenize(String text) {
+    List<String> l = new ArrayList<>();
+    String auxText = text;
+    auxText = auxText.replace("б/у", "\u0001\u0001SOCR_BU\u0001\u0001")
+      .replace("б/н", "\u0001\u0001SOCR_BN\u0001\u0001")
+      .replace(" .. ", "\u0001\u0001SP_DDOT_SP\u0001\u0001")
+      .replace(" . ", "\u0001\u0001SP_DOT_SP\u0001\u0001")
+      .replace(" .", " \u0001\u0001SP_DOT\u0001\u0001")
+      .replace("\u0001\u0001SP_DDOT_SP\u0001\u0001", " .. ")
+      .replace("\u0001\u0001SP_DOT_SP\u0001\u0001", " . ");
+
+    StringTokenizer st = new StringTokenizer(auxText, getTokenizingCharacters() , true);
+    while (st.hasMoreElements()) {
+      String s = st.nextToken();
+      s = s.replace("\u0001\u0001SOCR_BU\u0001\u0001", "б/у")
+        .replace("\u0001\u0001SOCR_BN\u0001\u0001", "б/н")
+        .replace("\u0001\u0001SP_DOT\u0001\u0001", ".");
+      l.addAll(wordsToAdd(s));
+    }
+    return joinEMailsAndUrls(l);
+  }
+
+  private List<String> wordsToAdd(String s) {
+    List<String> l = new ArrayList<>();
+    l.add(s);
+    return l;
+  }
+
 }
